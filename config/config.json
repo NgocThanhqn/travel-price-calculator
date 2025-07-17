@@ -1,0 +1,9 @@
+{
+  "priceConfig": {
+    "basePrice": 10000,
+    "pricePerKm": 5000,
+    "minPrice": 20000,
+    "maxPrice": 500000
+  },
+  "googleMapsApiKey": "YOUR_API_KEY_HERE"
+}
