@@ -1,16 +1,21 @@
+# backend/app/api/routes.py
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
+from datetime import datetime
 
+# Import database và models
 from database.database import get_db
 from database.crud import price_config_crud, trip_crud, settings_crud
+from models import models  # ← Thêm dòng này để fix lỗi
 from models.schemas import (
     PriceConfig, PriceConfigCreate, PriceConfigUpdate,
     TripCalculationRequest, TripCalculationResponse,
+    BookingRequest, BookingResponse,  # ← Thêm BookingRequest, BookingResponse
     Trip
 )
 from utils.price_calculator import PriceCalculator
-from models.schemas import BookingRequest, BookingResponse
 
 router = APIRouter()
 
@@ -22,26 +27,31 @@ async def calculate_trip_price(
 ):
     """Tính giá cho một chuyến đi"""
     try:
-        # Lấy cấu hình giá hiện tại
+        # Lấy cấu hình giá
         config = price_config_crud.get_config(db, "default")
         if not config:
             raise HTTPException(status_code=404, detail="Không tìm thấy cấu hình giá")
         
+        # Tính giá theo loại xe nếu có
+        vehicle_multiplier = {
+            "4_seats": 1.0,
+            "7_seats": 1.2,
+            "16_seats": 1.5
+        }.get(getattr(request, 'vehicle_type', '4_seats'), 1.0)
+        
         # Tạo calculator
         calculator = PriceCalculator(
-            base_price=config.base_price,
-            price_per_km=config.price_per_km,
-            min_price=config.min_price,
-            max_price=config.max_price
+            base_price=config.base_price * vehicle_multiplier,
+            price_per_km=config.price_per_km * vehicle_multiplier,
+            min_price=config.min_price * vehicle_multiplier,
+            max_price=config.max_price * vehicle_multiplier
         )
         
         # Tính toán
         result = calculator.calculate_trip(request)
         
-        # Lưu vào database
+        # Lưu vào database (nếu cần)
         trip_data = {
-            "from_address": result["from_address"],
-            "to_address": result["to_address"],
             "from_lat": request.from_lat,
             "from_lng": request.from_lng,
             "to_lat": request.to_lat,
@@ -51,109 +61,50 @@ async def calculate_trip_price(
             "calculated_price": result["calculated_price"],
             "config_used": "default"
         }
-        trip_crud.create_trip(db, trip_data)
+        
+        # Tạo trip record
+        db_trip = trip_crud.create_trip(db, trip_data)
         
         return result
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Lỗi tính toán: {str(e)}")
 
-# API quản lý cấu hình giá
-@router.get("/price-configs", response_model=List[PriceConfig])
-async def get_price_configs(db: Session = Depends(get_db)):
-    """Lấy tất cả cấu hình giá"""
-    return price_config_crud.get_all_configs(db)
-
-@router.get("/price-configs/{config_name}", response_model=PriceConfig)
-async def get_price_config(config_name: str, db: Session = Depends(get_db)):
-    """Lấy cấu hình giá theo tên"""
-    config = price_config_crud.get_config(db, config_name)
-    if not config:
-        raise HTTPException(status_code=404, detail="Không tìm thấy cấu hình")
-    return config
-
-@router.post("/price-configs", response_model=PriceConfig)
-async def create_price_config(
-    config: PriceConfigCreate,
-    db: Session = Depends(get_db)
-):
-    """Tạo cấu hình giá mới"""
-    return price_config_crud.create_config(db, config)
-
-@router.put("/price-configs/{config_name}", response_model=PriceConfig)
-async def update_price_config(
-    config_name: str,
-    config_update: PriceConfigUpdate,
-    db: Session = Depends(get_db)
-):
-    """Cập nhật cấu hình giá"""
-    updated_config = price_config_crud.update_config(db, config_name, config_update)
-    if not updated_config:
-        raise HTTPException(status_code=404, detail="Không tìm thấy cấu hình")
-    return updated_config
-
-# API lịch sử chuyến đi
-@router.get("/trips", response_model=List[Trip])
-async def get_trips(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    """Lấy lịch sử các chuyến đi"""
-    return trip_crud.get_trips(db, skip=skip, limit=limit)
-
-# API test đơn giản
+# API test khoảng cách
 @router.get("/test-distance")
-async def test_distance():
-    """Test tính khoảng cách"""
-    calculator = PriceCalculator(10000, 5000, 20000, 500000)
-    
-    # Test: Từ Quận 1 đến Quận 7 (tọa độ giả định)
-    distance = calculator.calculate_distance(
-        10.762622, 106.660172,  # Quận 1
-        10.732599, 106.719749   # Quận 7
-    )
-    
-    price_info = calculator.calculate_price(distance)
-    
-    return {
-        "from": "Quận 1, TP.HCM",
-        "to": "Quận 7, TP.HCM",
-        "distance_km": distance,
-        "price_info": price_info
-    }
-
-# Thêm vào cuối file routes.py
-
-# API quản lý settings
-@router.get("/settings/{key}")
-async def get_setting(key: str, db: Session = Depends(get_db)):
-    """Lấy giá trị setting theo key"""
-    setting = settings_crud.get_setting(db, key)
-    if not setting:
-        raise HTTPException(status_code=404, detail="Setting không tồn tại")
-    return {"key": setting.key, "value": setting.value, "description": setting.description}
-
-@router.post("/settings")
-async def update_setting(
-    key: str,
-    value: str,
-    description: str = "",
-    db: Session = Depends(get_db)
-):
-    """Cập nhật setting"""
+async def test_distance_calculation():
+    """Test API để kiểm tra tính khoảng cách"""
     try:
-        setting = settings_crud.update_setting(db, key, value, description)
-        return {"message": "Cập nhật setting thành công", "setting": {
-            "key": setting.key,
-            "value": setting.value,
-            "description": setting.description
-        }}
+        calculator = PriceCalculator()
+        
+        # Test với 2 điểm ở HCM
+        from_lat, from_lng = 10.762622, 106.660172  # Quận 1
+        to_lat, to_lng = 10.732599, 106.719749      # Quận 7
+        
+        # Fake request object
+        class TestRequest:
+            from_lat = from_lat
+            from_lng = from_lng
+            to_lat = to_lat
+            to_lng = to_lng
+            from_address = "Quận 1, TP.HCM"
+            to_address = "Quận 7, TP.HCM"
+        
+        result = calculator.calculate_trip(TestRequest())
+        
+        return {
+            **result,
+            "message": "✅ Test thành công!",
+            "test_data": {
+                "from": "Quận 1, TP.HCM",
+                "to": "Quận 7, TP.HCM"
+            }
+        }
+        
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Lỗi cập nhật setting: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Lỗi test: {str(e)}")
 
-@router.get("/settings")
-async def get_all_settings(db: Session = Depends(get_db)):
-    """Lấy tất cả settings"""
-    settings = db.query(models.Settings).all()
-    return [{"key": s.key, "value": s.value, "description": s.description} for s in settings]
-
+# API tạo đặt chuyến - FIX VERSION
 @router.post("/bookings", response_model=dict)
 async def create_booking(
     booking: BookingRequest,
@@ -213,7 +164,7 @@ async def create_booking(
             "config_used": "default"
         }
         
-        # Lưu vào database
+        # Lưu vào database - FIX: Sử dụng models.Booking thay vì chỉ Booking
         db_booking = models.Booking(**booking_data)
         db.add(db_booking)
         db.commit()
@@ -243,6 +194,7 @@ async def create_booking(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Lỗi tạo đặt chuyến: {str(e)}")
 
+# API lấy danh sách đặt chuyến
 @router.get("/bookings", response_model=List[dict])
 async def get_bookings(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     """Lấy danh sách đặt chuyến"""
@@ -266,6 +218,7 @@ async def get_bookings(skip: int = 0, limit: int = 100, db: Session = Depends(ge
         for b in bookings
     ]
 
+# API lấy thông tin loại xe
 @router.get("/vehicle-types")
 async def get_vehicle_types():
     """Lấy thông tin các loại xe"""
@@ -288,4 +241,51 @@ async def get_vehicle_types():
             "price_multiplier": 1.5,
             "max_passengers": 16
         }
+    }
+
+# API quản lý cấu hình giá
+@router.get("/price-configs")
+async def get_price_configs(db: Session = Depends(get_db)):
+    """Lấy tất cả cấu hình giá"""
+    return price_config_crud.get_all_configs(db)
+
+@router.get("/price-configs/{config_name}")
+async def get_price_config(config_name: str, db: Session = Depends(get_db)):
+    """Lấy cấu hình giá theo tên"""
+    config = price_config_crud.get_config(db, config_name)
+    if not config:
+        raise HTTPException(status_code=404, detail="Không tìm thấy cấu hình")
+    return config
+
+@router.post("/price-configs")
+async def create_price_config(config: PriceConfigCreate, db: Session = Depends(get_db)):
+    """Tạo cấu hình giá mới"""
+    return price_config_crud.create_config(db, config)
+
+@router.put("/price-configs/{config_name}")
+async def update_price_config(
+    config_name: str, 
+    config_update: PriceConfigUpdate, 
+    db: Session = Depends(get_db)
+):
+    """Cập nhật cấu hình giá"""
+    updated_config = price_config_crud.update_config(db, config_name, config_update)
+    if not updated_config:
+        raise HTTPException(status_code=404, detail="Không tìm thấy cấu hình")
+    return updated_config
+
+# API quản lý lịch sử chuyến đi
+@router.get("/trips")
+async def get_trips(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    """Lấy lịch sử các chuyến đi"""
+    return trip_crud.get_trips(db, skip, limit)
+
+# API health check
+@router.get("/health")
+async def health_check():
+    """Kiểm tra sức khỏe của API"""
+    return {
+        "status": "healthy",
+        "message": "Travel Price Calculator API is running!",
+        "timestamp": datetime.now().isoformat()
     }

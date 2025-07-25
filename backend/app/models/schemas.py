@@ -1,7 +1,8 @@
 from pydantic import BaseModel
+from typing import Optional, List
 from datetime import datetime
-from typing import Optional
 
+# Schema cho cấu hình giá
 class PriceConfigBase(BaseModel):
     config_name: str
     base_price: float
@@ -24,10 +25,11 @@ class PriceConfig(PriceConfigBase):
     id: int
     created_at: datetime
     updated_at: Optional[datetime] = None
-    
+
     class Config:
         from_attributes = True
 
+# Schema cho yêu cầu tính giá
 class TripCalculationRequest(BaseModel):
     from_lat: float
     from_lng: float
@@ -35,6 +37,7 @@ class TripCalculationRequest(BaseModel):
     to_lng: float
     from_address: Optional[str] = None
     to_address: Optional[str] = None
+    vehicle_type: Optional[str] = "4_seats"  # Thêm vehicle_type
 
 class TripCalculationResponse(BaseModel):
     distance_km: float
@@ -42,12 +45,10 @@ class TripCalculationResponse(BaseModel):
     calculated_price: float
     from_address: str
     to_address: str
-    breakdown: dict  # Chi tiết cách tính giá
+    breakdown: dict
 
-class Trip(BaseModel):
-    id: int
-    from_address: str
-    to_address: str
+# Schema cho chuyến đi
+class TripBase(BaseModel):
     from_lat: float
     from_lng: float
     to_lat: float
@@ -56,11 +57,20 @@ class Trip(BaseModel):
     duration_minutes: float
     calculated_price: float
     config_used: str
+
+class TripCreate(TripBase):
+    pass
+
+class Trip(TripBase):
+    id: int
+    from_address: str
+    to_address: str
     created_at: datetime
     
     class Config:
         from_attributes = True
 
+# Schema cho đặt chuyến - THÊM MỚI
 class BookingRequest(BaseModel):
     # Thông tin khách hàng
     customer_name: str
@@ -103,9 +113,21 @@ class BookingResponse(BaseModel):
     class Config:
         from_attributes = True
 
+# Schema cho loại xe
 class VehicleTypeInfo(BaseModel):
     type: str
     name: str
     description: str
     price_multiplier: float  # Hệ số nhân giá
     max_passengers: int
+
+# Schema cho settings
+class Settings(BaseModel):
+    id: int
+    key: str
+    value: str
+    description: Optional[str] = None
+    updated_at: Optional[datetime] = None
+    
+    class Config:
+        from_attributes = True

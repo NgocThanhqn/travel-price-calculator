@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { apiService } from '../services/api';
 import MapSelector from './MapSelector';
 
@@ -14,8 +14,62 @@ const PriceCalculator = () => {
   const [selectingMode, setSelectingMode] = useState(null); // 'from' or 'to'
   const [selectedLocations, setSelectedLocations] = useState({});
 
-  // Temporary API key - replace with real one
-  //const GOOGLE_MAPS_API_KEY = 'YOUR_API_KEY_HERE';
+  // Booking form states
+  const [vehicleType, setVehicleType] = useState('4_seats');
+  const [vehicleTypes, setVehicleTypes] = useState({});
+  const [showBookingForm, setShowBookingForm] = useState(false);
+  const [bookingData, setBookingData] = useState({
+    customer_name: '',
+    customer_phone: '',
+    customer_email: '',
+    travel_date: '',
+    travel_time: '08:00',
+    passenger_count: 1,
+    notes: ''
+  });
+  const [bookingLoading, setBookingLoading] = useState(false);
+  const [bookingSuccess, setBookingSuccess] = useState('');
+
+  useEffect(() => {
+    loadVehicleTypes();
+    // Set default date to tomorrow
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    setBookingData(prev => ({
+      ...prev,
+      travel_date: tomorrow.toISOString().split('T')[0]
+    }));
+  }, []);
+
+  const loadVehicleTypes = async () => {
+    try {
+      const response = await apiService.getVehicleTypes();
+      setVehicleTypes(response.data);
+    } catch (err) {
+      console.error('Error loading vehicle types:', err);
+      // Fallback vehicle types
+      setVehicleTypes({
+        "4_seats": {
+          "name": "Xe 4 chỗ",
+          "description": "Phù hợp cho 1-3 khách",
+          "price_multiplier": 1.0,
+          "max_passengers": 4
+        },
+        "7_seats": {
+          "name": "Xe 7 chỗ", 
+          "description": "Phù hợp cho 4-6 khách",
+          "price_multiplier": 1.2,
+          "max_passengers": 7
+        },
+        "16_seats": {
+          "name": "Xe 16 chỗ",
+          "description": "Phù hợp cho 7-15 khách", 
+          "price_multiplier": 1.5,
+          "max_passengers": 16
+        }
+      });
+    }
+  };
 
   const handleLocationSelect = (location) => {
     if (selectingMode === 'from') {
@@ -42,6 +96,8 @@ const PriceCalculator = () => {
 
     setLoading(true);
     setError('');
+    setShowBookingForm(false);
+    setBookingSuccess('');
 
     try {
       const requestData = {
@@ -51,10 +107,17 @@ const PriceCalculator = () => {
         to_lng: parseFloat(toCoords.lng),
         from_address: fromAddress || null,
         to_address: toAddress || null,
+        vehicle_type: vehicleType
       };
 
       const response = await apiService.calculatePrice(requestData);
       setResult(response.data);
+      
+      // Auto show booking form after successful price calculation
+      setTimeout(() => {
+        setShowBookingForm(true);
+      }, 1000);
+      
     } catch (err) {
       setError('Có lỗi xảy ra khi tính toán: ' + (err.response?.data?.detail || err.message));
     } finally {
@@ -65,9 +128,17 @@ const PriceCalculator = () => {
   const handleTestCalculation = async () => {
     setLoading(true);
     setError('');
+    setShowBookingForm(false);
+    setBookingSuccess('');
     try {
       const response = await apiService.testDistance();
       setResult(response.data);
+      
+      // Auto show booking form after test
+      setTimeout(() => {
+        setShowBookingForm(true);
+      }, 1000);
+      
     } catch (err) {
       setError('Có lỗi xảy ra: ' + err.message);
     } finally {
@@ -84,6 +155,82 @@ const PriceCalculator = () => {
     setFromAddress('Quận 1, TP.HCM');
     setToAddress('Quận 7, TP.HCM');
     setSelectedLocations({ from: fromLoc, to: toLoc });
+  };
+
+  const handleBookingInputChange = (e) => {
+    const { name, value } = e.target;
+    setBookingData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleBookingSubmit = async (e) => {
+    e.preventDefault();
+    setBookingLoading(true);
+    setError('');
+    setBookingSuccess('');
+
+    try {
+      const bookingRequestData = {
+        customer_name: bookingData.customer_name,
+        customer_phone: bookingData.customer_phone,
+        customer_email: bookingData.customer_email,
+        from_lat: parseFloat(fromCoords.lat),
+        from_lng: parseFloat(fromCoords.lng),
+        to_lat: parseFloat(toCoords.lat),
+        to_lng: parseFloat(toCoords.lng),
+        from_address: fromAddress,
+        to_address: toAddress,
+        travel_date: bookingData.travel_date,
+        travel_time: bookingData.travel_time,
+        passenger_count: parseInt(bookingData.passenger_count),
+        vehicle_type: vehicleType,
+        notes: bookingData.notes
+      };
+
+      const response = await apiService.createBooking(bookingRequestData);
+      
+      if (response.data.success) {
+        setBookingSuccess(`🎉 Đặt chuyến thành công! Mã đặt chuyến: #${response.data.booking_id}. Chúng tôi sẽ liên hệ với bạn sớm nhất.`);
+        
+        // Reset booking form
+        setBookingData({
+          customer_name: '',
+          customer_phone: '',
+          customer_email: '',
+          travel_date: '',
+          travel_time: '08:00',
+          passenger_count: 1,
+          notes: ''
+        });
+        
+        // Hide booking form after 5 seconds
+        setTimeout(() => {
+          setShowBookingForm(false);
+        }, 5000);
+      }
+      
+    } catch (err) {
+      setError('Có lỗi xảy ra khi đặt chuyến: ' + (err.response?.data?.detail || err.message));
+    } finally {
+      setBookingLoading(false);
+    }
+  };
+
+  // Calculate price with vehicle multiplier
+  const getAdjustedPrice = () => {
+    if (!result || !vehicleTypes[vehicleType]) return result;
+    
+    const multiplier = vehicleTypes[vehicleType].price_multiplier;
+    const basePrice = result.calculated_price || result.price_info?.final_price;
+    
+    return {
+      ...result,
+      calculated_price: Math.round(basePrice * multiplier),
+      original_price: basePrice,
+      vehicle_multiplier: multiplier
+    };
   };
 
   if (showMap) {
@@ -104,7 +251,6 @@ const PriceCalculator = () => {
         <MapSelector 
           onLocationSelect={handleLocationSelect}
           selectedLocations={selectedLocations}
-          // apiKey={GOOGLE_MAPS_API_KEY}
         />
         
         <div className="mt-4 text-center">
@@ -118,6 +264,8 @@ const PriceCalculator = () => {
       </div>
     );
   }
+
+  const adjustedResult = getAdjustedPrice();
 
   return (
     <div className="max-w-6xl mx-auto p-6 bg-white shadow-lg rounded-lg">
@@ -204,6 +352,24 @@ const PriceCalculator = () => {
         </div>
       </div>
 
+      {/* Vehicle Type Selection */}
+      <div className="mb-6">
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          🚙 Loại xe
+        </label>
+        <select
+          value={vehicleType}
+          onChange={(e) => setVehicleType(e.target.value)}
+          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        >
+          {Object.entries(vehicleTypes).map(([key, vehicle]) => (
+            <option key={key} value={key}>
+              {vehicle.name} - {vehicle.description} (×{vehicle.price_multiplier})
+            </option>
+          ))}
+        </select>
+      </div>
+
       {/* Buttons */}
       <div className="flex justify-center space-x-4 mb-8">
         <button
@@ -237,9 +403,16 @@ const PriceCalculator = () => {
         </div>
       )}
 
+      {/* Success Display */}
+      {bookingSuccess && (
+        <div className="mb-6 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg">
+          {bookingSuccess}
+        </div>
+      )}
+
       {/* Result Display */}
       {result && (
-        <div className="bg-gradient-to-r from-blue-50 to-green-50 p-6 rounded-lg border">
+        <div className="bg-gradient-to-r from-blue-50 to-green-50 p-6 rounded-lg border mb-6">
           <h3 className="text-xl font-semibold mb-4 text-gray-800">📊 Kết quả tính toán</h3>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
@@ -262,15 +435,24 @@ const PriceCalculator = () => {
                   <span className="text-purple-600">{result.duration_minutes} phút</span>
                 </p>
               )}
+              <p className="flex items-center">
+                <span className="font-semibold text-gray-700 w-20">Loại xe:</span> 
+                <span className="text-indigo-600">{vehicleTypes[vehicleType]?.name}</span>
+              </p>
             </div>
             
             <div className="flex items-center justify-center">
               <div className="text-center">
                 <p className="text-sm text-gray-500 mb-2">Tổng chi phí</p>
                 <p className="text-4xl font-bold text-green-600">
-                  {(result.calculated_price || result.price_info?.final_price)?.toLocaleString('vi-VN')} 
+                  {adjustedResult.calculated_price?.toLocaleString('vi-VN')} 
                   <span className="text-lg ml-1">VNĐ</span>
                 </p>
+                {adjustedResult.vehicle_multiplier !== 1.0 && (
+                  <p className="text-sm text-gray-500 mt-1">
+                    (Giá gốc: {adjustedResult.original_price?.toLocaleString('vi-VN')} VNĐ × {adjustedResult.vehicle_multiplier})
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -301,6 +483,225 @@ const PriceCalculator = () => {
               </div>
             </div>
           )}
+
+          {/* Book Now Button */}
+          {!showBookingForm && (
+            <div className="text-center mt-6 pt-4 border-t border-gray-200">
+              <button
+                onClick={() => setShowBookingForm(true)}
+                className="px-8 py-4 bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-lg hover:from-green-600 hover:to-blue-600 font-bold text-lg shadow-lg transform hover:scale-105 transition-all duration-200"
+              >
+                🚗 Đặt chuyến ngay
+              </button>
+              <p className="text-sm text-gray-500 mt-2">
+                * Giá trên là ước tính. Giá cuối cùng sẽ được xác nhận khi liên hệ.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Booking Form - Styled like HappyTrip */}
+      {showBookingForm && result && (
+        <div className="bg-gradient-to-br from-orange-50 via-yellow-50 to-green-50 p-6 rounded-xl border-2 border-orange-200 shadow-lg">
+          <div className="text-center mb-6">
+            <h3 className="text-2xl font-bold text-orange-600 mb-2">
+              🎫 Đặt chuyến đi ngay
+            </h3>
+            <p className="text-gray-600">Điền thông tin để chúng tôi liên hệ xác nhận</p>
+          </div>
+
+          <form onSubmit={handleBookingSubmit} className="space-y-6">
+            {/* Customer Information - HappyTrip Style */}
+            <div className="bg-white p-5 rounded-lg shadow-sm border border-orange-100">
+              <h4 className="font-semibold text-gray-800 mb-4 flex items-center">
+                👤 Thông tin liên hệ
+              </h4>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Họ và tên *
+                  </label>
+                  <input
+                    type="text"
+                    name="customer_name"
+                    value={bookingData.customer_name}
+                    onChange={handleBookingInputChange}
+                    required
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    placeholder="Nguyễn Văn A"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Số điện thoại *
+                  </label>
+                  <input
+                    type="tel"
+                    name="customer_phone"
+                    value={bookingData.customer_phone}
+                    onChange={handleBookingInputChange}
+                    required
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    placeholder="0901234567"
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Email (tùy chọn)
+                  </label>
+                  <input
+                    type="email"
+                    name="customer_email"
+                    value={bookingData.customer_email}
+                    onChange={handleBookingInputChange}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    placeholder="email@example.com"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Trip Details */}
+            <div className="bg-white p-5 rounded-lg shadow-sm border border-orange-100">
+              <h4 className="font-semibold text-gray-800 mb-4 flex items-center">
+                📅 Chi tiết chuyến đi
+              </h4>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Ngày đi *
+                  </label>
+                  <input
+                    type="date"
+                    name="travel_date"
+                    value={bookingData.travel_date}
+                    onChange={handleBookingInputChange}
+                    required
+                    min={new Date().toISOString().split('T')[0]}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Giờ đi *
+                  </label>
+                  <input
+                    type="time"
+                    name="travel_time"
+                    value={bookingData.travel_time}
+                    onChange={handleBookingInputChange}
+                    required
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Số hành khách
+                  </label>
+                  <select
+                    name="passenger_count"
+                    value={bookingData.passenger_count}
+                    onChange={handleBookingInputChange}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                  >
+                    {[...Array(vehicleTypes[vehicleType]?.max_passengers || 4)].map((_, i) => (
+                      <option key={i + 1} value={i + 1}>
+                        {i + 1} người
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Ghi chú đặc biệt
+                </label>
+                <textarea
+                  name="notes"
+                  value={bookingData.notes}
+                  onChange={handleBookingInputChange}
+                  rows="3"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                  placeholder="Yêu cầu đặc biệt, điểm đón cụ thể, ghi chú về hành lý..."
+                ></textarea>
+              </div>
+            </div>
+
+            {/* Trip Summary - HappyTrip Style */}
+            <div className="bg-gradient-to-r from-orange-100 to-yellow-100 p-5 rounded-lg border border-orange-200">
+              <h4 className="font-semibold text-orange-800 mb-3 flex items-center">
+                📋 Tóm tắt đặt chuyến
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div className="space-y-2">
+                  <p><span className="font-medium text-gray-700">Từ:</span> <span className="text-blue-600">{fromAddress}</span></p>
+                  <p><span className="font-medium text-gray-700">Đến:</span> <span className="text-blue-600">{toAddress}</span></p>
+                  <p><span className="font-medium text-gray-700">Khoảng cách:</span> <span className="text-orange-600">{result.distance_km} km</span></p>
+                  <p><span className="font-medium text-gray-700">Thời gian:</span> <span className="text-purple-600">{result.duration_minutes} phút</span></p>
+                </div>
+                <div className="space-y-2">
+                  <p><span className="font-medium text-gray-700">Loại xe:</span> <span className="text-indigo-600">{vehicleTypes[vehicleType]?.name}</span></p>
+                  <p><span className="font-medium text-gray-700">Số khách:</span> <span className="text-green-600">{bookingData.passenger_count} người</span></p>
+                  <div className="bg-white p-3 rounded-lg mt-3">
+                    <p className="text-center">
+                      <span className="text-lg font-medium text-gray-700">Tổng chi phí:</span>
+                    </p>
+                    <p className="text-center text-2xl font-bold text-green-600">
+                      {adjustedResult.calculated_price?.toLocaleString('vi-VN')} VNĐ
+                    </p>
+                    <p className="text-center text-xs text-gray-500 mt-1">
+                      * Giá ước tính, sẽ được xác nhận lại
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-4">
+              <button
+                type="button"
+                onClick={() => setShowBookingForm(false)}
+                className="flex-1 px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 font-semibold transition-colors"
+              >
+                ← Quay lại
+              </button>
+              <button
+                type="submit"
+                disabled={bookingLoading}
+                className="flex-2 px-8 py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg hover:from-orange-600 hover:to-red-600 disabled:opacity-50 disabled:cursor-not-allowed font-bold text-lg shadow-lg transform hover:scale-105 transition-all duration-200"
+              >
+                {bookingLoading ? (
+                  <>
+                    <span className="inline-block animate-spin mr-2">⏳</span>
+                    Đang xử lý...
+                  </>
+                ) : (
+                  <>
+                    📞 Đặt chuyến ngay
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Terms Notice */}
+            <div className="text-center text-xs text-gray-500 mt-4 p-3 bg-gray-50 rounded-lg">
+              <p>
+                ✓ Bằng việc đặt chuyến, bạn đồng ý với <span className="text-blue-600 underline cursor-pointer">điều khoản dịch vụ</span> của chúng tôi
+              </p>
+              <p className="mt-1">
+                📞 Chúng tôi sẽ liên hệ xác nhận trong vòng 5-10 phút
+              </p>
+            </div>
+          </form>
         </div>
       )}
     </div>
