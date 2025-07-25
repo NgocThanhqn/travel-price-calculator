@@ -34,6 +34,11 @@ export const apiService = {
     params: { key, value, description }
   }),
   getAllSettings: () => api.get('/api/settings'),
+
+  // Booking management
+  createBooking: (data) => api.post('/api/bookings', data),
+  getBookings: (skip = 0, limit = 100) => api.get(`/api/bookings?skip=${skip}&limit=${limit}`),
+  getVehicleTypes: () => api.get('/api/vehicle-types'),
 };
 
 export default api;

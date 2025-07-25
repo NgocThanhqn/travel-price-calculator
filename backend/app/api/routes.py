@@ -10,6 +10,7 @@ from models.schemas import (
     Trip
 )
 from utils.price_calculator import PriceCalculator
+from models.schemas import BookingRequest, BookingResponse
 
 router = APIRouter()
 
@@ -152,3 +153,139 @@ async def get_all_settings(db: Session = Depends(get_db)):
     """Lấy tất cả settings"""
     settings = db.query(models.Settings).all()
     return [{"key": s.key, "value": s.value, "description": s.description} for s in settings]
+
+@router.post("/bookings", response_model=dict)
+async def create_booking(
+    booking: BookingRequest,
+    db: Session = Depends(get_db)
+):
+    """Tạo đặt chuyến với thông tin khách hàng"""
+    try:
+        # Lấy cấu hình giá
+        config = price_config_crud.get_config(db, "default")
+        if not config:
+            raise HTTPException(status_code=404, detail="Không tìm thấy cấu hình giá")
+        
+        # Tính giá theo loại xe
+        vehicle_multiplier = {
+            "4_seats": 1.0,
+            "7_seats": 1.2,
+            "16_seats": 1.5
+        }.get(booking.vehicle_type, 1.0)
+        
+        # Tạo calculator với hệ số xe
+        calculator = PriceCalculator(
+            base_price=config.base_price * vehicle_multiplier,
+            price_per_km=config.price_per_km * vehicle_multiplier,
+            min_price=config.min_price * vehicle_multiplier,
+            max_price=config.max_price * vehicle_multiplier
+        )
+        
+        # Tính toán khoảng cách và giá
+        distance = calculator.calculate_distance(
+            booking.from_lat, booking.from_lng,
+            booking.to_lat, booking.to_lng
+        )
+        
+        price_info = calculator.calculate_price(distance)
+        duration = (distance / 40) * 60  # 40km/h average speed
+        
+        # Tạo booking record
+        booking_data = {
+            "customer_name": booking.customer_name,
+            "customer_phone": booking.customer_phone,
+            "customer_email": booking.customer_email,
+            "from_address": booking.from_address or f"{booking.from_lat}, {booking.from_lng}",
+            "to_address": booking.to_address or f"{booking.to_lat}, {booking.to_lng}",
+            "from_lat": booking.from_lat,
+            "from_lng": booking.from_lng,
+            "to_lat": booking.to_lat,
+            "to_lng": booking.to_lng,
+            "distance_km": distance,
+            "duration_minutes": round(duration, 1),
+            "calculated_price": price_info["final_price"],
+            "travel_date": booking.travel_date,
+            "travel_time": booking.travel_time,
+            "passenger_count": booking.passenger_count,
+            "vehicle_type": booking.vehicle_type,
+            "notes": booking.notes,
+            "booking_status": "pending",
+            "config_used": "default"
+        }
+        
+        # Lưu vào database
+        db_booking = models.Booking(**booking_data)
+        db.add(db_booking)
+        db.commit()
+        db.refresh(db_booking)
+        
+        return {
+            "success": True,
+            "booking_id": db_booking.id,
+            "message": "Đặt chuyến thành công!",
+            "booking_info": {
+                "customer_name": db_booking.customer_name,
+                "customer_phone": db_booking.customer_phone,
+                "from_address": db_booking.from_address,
+                "to_address": db_booking.to_address,
+                "distance_km": db_booking.distance_km,
+                "duration_minutes": db_booking.duration_minutes,
+                "calculated_price": db_booking.calculated_price,
+                "vehicle_type": db_booking.vehicle_type,
+                "passenger_count": db_booking.passenger_count,
+                "travel_date": db_booking.travel_date,
+                "travel_time": db_booking.travel_time,
+                "booking_status": db_booking.booking_status
+            },
+            "price_breakdown": price_info
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Lỗi tạo đặt chuyến: {str(e)}")
+
+@router.get("/bookings", response_model=List[dict])
+async def get_bookings(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    """Lấy danh sách đặt chuyến"""
+    bookings = db.query(models.Booking).order_by(models.Booking.created_at.desc()).offset(skip).limit(limit).all()
+    return [
+        {
+            "id": b.id,
+            "customer_name": b.customer_name,
+            "customer_phone": b.customer_phone,
+            "from_address": b.from_address,
+            "to_address": b.to_address,
+            "distance_km": b.distance_km,
+            "calculated_price": b.calculated_price,
+            "vehicle_type": b.vehicle_type,
+            "passenger_count": b.passenger_count,
+            "travel_date": b.travel_date,
+            "travel_time": b.travel_time,
+            "booking_status": b.booking_status,
+            "created_at": b.created_at.isoformat() if b.created_at else None
+        }
+        for b in bookings
+    ]
+
+@router.get("/vehicle-types")
+async def get_vehicle_types():
+    """Lấy thông tin các loại xe"""
+    return {
+        "4_seats": {
+            "name": "Xe 4 chỗ",
+            "description": "Phù hợp cho 1-3 khách",
+            "price_multiplier": 1.0,
+            "max_passengers": 4
+        },
+        "7_seats": {
+            "name": "Xe 7 chỗ", 
+            "description": "Phù hợp cho 4-6 khách",
+            "price_multiplier": 1.2,
+            "max_passengers": 7
+        },
+        "16_seats": {
+            "name": "Xe 16 chỗ",
+            "description": "Phù hợp cho 7-15 khách", 
+            "price_multiplier": 1.5,
+            "max_passengers": 16
+        }
+    }
