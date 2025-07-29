@@ -110,7 +110,8 @@ const PriceCalculator = () => {
         vehicle_type: vehicleType
       };
 
-      const response = await apiService.calculatePrice(requestData);
+      // Sử dụng enhanced API để có khoảng cách chính xác từ Google Maps
+      const response = await apiService.calculatePriceEnhanced(requestData);
       setResult(response.data);
       
       // Auto show booking form after successful price calculation
@@ -131,13 +132,52 @@ const PriceCalculator = () => {
     setShowBookingForm(false);
     setBookingSuccess('');
     try {
-      const response = await apiService.testDistance();
-      setResult(response.data);
-      
-      // Auto show booking form after test
-      setTimeout(() => {
-        setShowBookingForm(true);
-      }, 1000);
+      // Test với enhanced API để có khoảng cách chính xác
+      const response = await apiService.testGoogleMaps();
+      if (response.data && response.data.success) {
+        // Tạo fake result object từ test data để hiển thị
+        const testResult = {
+          distance_km: response.data.test_result?.distance || 15.2,
+          duration_minutes: response.data.test_result?.duration || 28.5,
+          calculated_price: 76000, // Giá mẫu
+          from_address: response.data.test_result?.from_address || "Quận 1, TP.HCM",
+          to_address: response.data.test_result?.to_address || "Quận 7, TP.HCM",
+          calculation_method: response.data.test_result?.method || "google_maps",
+          breakdown: {
+            base_price: 10000,
+            price_per_km: 5000,
+            final_price: 76000
+          }
+        };
+        setResult(testResult);
+        
+        // Auto show booking form after test
+        setTimeout(() => {
+          setShowBookingForm(true);
+        }, 1000);
+      } else if (response.data && response.data.will_use_fallback) {
+        // Fallback case - vẫn hiển thị kết quả
+        const fallbackResult = {
+          distance_km: response.data.test_result?.distance || 12.8,
+          duration_minutes: response.data.test_result?.duration || 30.7,
+          calculated_price: 74000,
+          from_address: "Quận 1, TP.HCM (ước tính)",
+          to_address: "Quận 7, TP.HCM (ước tính)", 
+          calculation_method: response.data.test_result?.method || "haversine_adjusted",
+          breakdown: {
+            base_price: 10000,
+            price_per_km: 5000,
+            final_price: 74000
+          }
+        };
+        setResult(fallbackResult);
+        
+        setTimeout(() => {
+          setShowBookingForm(true);
+        }, 1000);
+      } else {
+        throw new Error('Test failed');
+      }
       
     } catch (err) {
       setError('Có lỗi xảy ra: ' + err.message);
@@ -436,8 +476,17 @@ const PriceCalculator = () => {
                 </p>
               )}
               <p className="flex items-center">
-                <span className="font-semibold text-gray-700 w-20">Loại xe:</span> 
+                <span className="font-medium text-gray-700">Loại xe:</span> 
                 <span className="text-indigo-600">{vehicleTypes[vehicleType]?.name}</span>
+              </p>
+              <p className="flex items-center">
+                <span className="font-medium text-gray-700">Phương thức:</span> 
+                <span className="text-blue-600">
+                  {result.calculation_method === 'google_maps' ? '🗺️ Google Maps' : 
+                   result.calculation_method === 'enhanced_haversine' ? '🧮 Ước tính nâng cao' :
+                   result.calculation_method === 'haversine_adjusted' ? '📐 Ước tính điều chỉnh' : 
+                   '🔍 Đang tính toán'}
+                </span>
               </p>
             </div>
             

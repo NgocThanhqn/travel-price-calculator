@@ -8,11 +8,11 @@ from datetime import datetime
 # Import database và models
 from database.database import get_db
 from database.crud import price_config_crud, trip_crud, settings_crud
-from models import models  # ← Thêm dòng này để fix lỗi
+from models import models
 from models.schemas import (
     PriceConfig, PriceConfigCreate, PriceConfigUpdate,
     TripCalculationRequest, TripCalculationResponse,
-    BookingRequest, BookingResponse,  # ← Thêm BookingRequest, BookingResponse
+    BookingRequest, BookingResponse,
     Trip
 )
 from utils.price_calculator import PriceCalculator
@@ -104,7 +104,7 @@ async def test_distance_calculation():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Lỗi test: {str(e)}")
 
-# API tạo đặt chuyến - FIX VERSION
+# API tạo đặt chuyến
 @router.post("/bookings", response_model=dict)
 async def create_booking(
     booking: BookingRequest,
@@ -164,7 +164,7 @@ async def create_booking(
             "config_used": "default"
         }
         
-        # Lưu vào database - FIX: Sử dụng models.Booking thay vì chỉ Booking
+        # Lưu vào database
         db_booking = models.Booking(**booking_data)
         db.add(db_booking)
         db.commit()
@@ -279,6 +279,478 @@ async def update_price_config(
 async def get_trips(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     """Lấy lịch sử các chuyến đi"""
     return trip_crud.get_trips(db, skip, limit)
+
+# Import Google Maps calculator
+try:
+    from utils.google_maps_calculator import GoogleMapsDistanceCalculator
+    GOOGLE_MAPS_AVAILABLE = True
+except ImportError:
+    GOOGLE_MAPS_AVAILABLE = False
+
+# API test Google Maps với fallback
+@router.get("/test-google-maps")
+async def test_google_maps():
+    """Test Google Maps API với fallback mechanism - FIXED VERSION"""
+    try:
+        if not GOOGLE_MAPS_AVAILABLE:
+            return {
+                "status": "unavailable",
+                "message": "Google Maps library không có sẵn",
+                "will_use_fallback": True,
+                "google_maps_available": False,
+                "fallback_available": True
+            }
+        
+        # Test Google Maps
+        print("🧪 Testing Google Maps connection...")
+        gmaps_calc = GoogleMapsDistanceCalculator()
+        
+        if not gmaps_calc.has_api_key:
+            return {
+                "status": "no_api_key",
+                "message": "Chưa cấu hình Google Maps API key trong database",
+                "will_use_fallback": True,
+                "google_maps_available": True,
+                "fallback_available": True,
+                "has_api_key": False
+            }
+        
+        # Thực hiện test connection
+        test_result = gmaps_calc.test_connection()
+        
+        return {
+            **test_result,
+            "google_maps_available": GOOGLE_MAPS_AVAILABLE,
+            "fallback_available": True,
+            "has_api_key": gmaps_calc.has_api_key
+        }
+        
+    except Exception as e:
+        print(f"❌ Error in test_google_maps endpoint: {e}")
+        return {
+            "status": "endpoint_error",
+            "message": f"Lỗi trong endpoint test: {str(e)}",
+            "will_use_fallback": True,
+            "google_maps_available": GOOGLE_MAPS_AVAILABLE,
+            "fallback_available": True
+        }
+
+# Thêm endpoint debug chi tiết hơn
+@router.get("/debug/detailed-google-maps-test")
+async def detailed_google_maps_test(db: Session = Depends(get_db)):
+    """Debug chi tiết cho Google Maps"""
+    try:
+        result = {
+            "step1_library_check": GOOGLE_MAPS_AVAILABLE,
+            "step2_api_key_check": None,
+            "step3_client_init": None,
+            "step4_api_call": None,
+            "final_recommendation": None
+        }
+        
+        # Step 1: Library check (đã có)
+        if not GOOGLE_MAPS_AVAILABLE:
+            result["final_recommendation"] = "Cài đặt: pip install googlemaps"
+            return result
+        
+        # Step 2: API key check
+        setting = db.query(models.Settings).filter(
+            models.Settings.key == "google_maps_api_key"
+        ).first()
+        
+        if not setting or not setting.value or setting.value == "YOUR_API_KEY_HERE":
+            result["step2_api_key_check"] = {
+                "status": "no_valid_key",
+                "message": "Không có API key hợp lệ trong database"
+            }
+            result["final_recommendation"] = "Cấu hình API key trong admin page"
+            return result
+        
+        api_key = setting.value
+        result["step2_api_key_check"] = {
+            "status": "has_key",
+            "key_length": len(api_key),
+            "key_preview": api_key[:10] + "..." + api_key[-5:]
+        }
+        
+        # Step 3: Client initialization
+        try:
+            import googlemaps
+            gmaps = googlemaps.Client(key=api_key)
+            result["step3_client_init"] = {
+                "status": "success",
+                "message": "Google Maps client khởi tạo thành công"
+            }
+        except Exception as e:
+            result["step3_client_init"] = {
+                "status": "failed",
+                "error": str(e)
+            }
+            result["final_recommendation"] = f"Lỗi client init: {str(e)}"
+            return result
+        
+        # Step 4: API call test
+        try:
+            directions_result = gmaps.directions(
+                origin=(10.762622, 106.660172),
+                destination=(10.732599, 106.719749),
+                mode="driving"
+            )
+            
+            if directions_result:
+                route = directions_result[0]
+                leg = route['legs'][0]
+                
+                result["step4_api_call"] = {
+                    "status": "success",
+                    "distance": leg['distance']['text'],
+                    "duration": leg['duration']['text'],
+                    "start": leg['start_address'],
+                    "end": leg['end_address']
+                }
+                result["final_recommendation"] = "Google Maps API hoạt động hoàn hảo!"
+            else:
+                result["step4_api_call"] = {
+                    "status": "no_results",
+                    "message": "API call thành công nhưng không có kết quả"
+                }
+                
+        except googlemaps.exceptions.ApiError as e:
+            result["step4_api_call"] = {
+                "status": "api_error",
+                "error": str(e),
+                "error_type": "ApiError"
+            }
+            result["final_recommendation"] = f"Lỗi API: {str(e)} - Kiểm tra enable Directions API"
+            
+        except googlemaps.exceptions.HTTPError as e:
+            result["step4_api_call"] = {
+                "status": "http_error", 
+                "error": str(e),
+                "error_type": "HTTPError"
+            }
+            result["final_recommendation"] = f"Lỗi HTTP: {str(e)} - Kiểm tra API key và quota"
+            
+        except Exception as e:
+            result["step4_api_call"] = {
+                "status": "unknown_error",
+                "error": str(e),
+                "error_type": type(e).__name__
+            }
+            result["final_recommendation"] = f"Lỗi không xác định: {str(e)}"
+        
+        return result
+        
+    except Exception as e:
+        return {
+            "status": "debug_error",
+            "message": f"Lỗi trong debug: {str(e)}"
+        }
+
+# API tính giá với Google Maps (enhanced)
+@router.post("/calculate-price-enhanced", response_model=dict)
+async def calculate_price_enhanced(
+    request: TripCalculationRequest,
+    db: Session = Depends(get_db)
+):
+    """Tính giá với Google Maps và fallback mechanism"""
+    try:
+        # Lấy cấu hình giá
+        config = price_config_crud.get_config(db, "default")
+        if not config:
+            raise HTTPException(status_code=404, detail="Không tìm thấy cấu hình giá")
+        
+        # Tính giá theo loại xe
+        vehicle_multiplier = {
+            "4_seats": 1.0,
+            "7_seats": 1.2,
+            "16_seats": 1.5
+        }.get(getattr(request, 'vehicle_type', '4_seats'), 1.0)
+        
+        # Tạo smart calculator
+        calculator = PriceCalculator(
+            base_price=config.base_price * vehicle_multiplier,
+            price_per_km=config.price_per_km * vehicle_multiplier,
+            min_price=config.min_price * vehicle_multiplier,
+            max_price=config.max_price * vehicle_multiplier,
+            use_google_maps=True  # Enable Google Maps với fallback
+        )
+        
+        # Tính toán
+        result = calculator.calculate_trip(request)
+        
+        # Lưu vào database
+        trip_data = {
+            "from_lat": request.from_lat,
+            "from_lng": request.from_lng,
+            "to_lat": request.to_lat,
+            "to_lng": request.to_lng,
+            "distance_km": result["distance_km"],
+            "duration_minutes": result["duration_minutes"],
+            "calculated_price": result["calculated_price"],
+            "config_used": "default"
+        }
+        
+        db_trip = trip_crud.create_trip(db, trip_data)
+        
+        # Thêm metadata
+        result["metadata"] = {
+            "calculation_method": result.get("calculation_method"),
+            "vehicle_multiplier": vehicle_multiplier,
+            "google_maps_available": GOOGLE_MAPS_AVAILABLE,
+            "trip_id": db_trip.id if db_trip else None,
+            "calculation_status": calculator.get_calculation_status()
+        }
+        
+        return result
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Lỗi tính toán: {str(e)}")
+
+# API kiểm tra status tính toán
+@router.get("/calculation-status")
+async def get_calculation_status():
+    """Kiểm tra khả năng tính toán hiện tại"""
+    try:
+        # Tạo calculator để check status
+        calculator = PriceCalculator(10000, 5000, 20000, 500000, use_google_maps=True)
+        status = calculator.get_calculation_status()
+        
+        return {
+            **status,
+            "api_endpoints": {
+                "enhanced": "/api/calculate-price-enhanced",
+                "basic": "/api/calculate-price",
+                "test": "/api/test-google-maps"
+            },
+            "recommendations": {
+                "use_enhanced": status["google_maps_ready"],
+                "message": "Sử dụng enhanced API để có khoảng cách chính xác nhất" if status["google_maps_ready"] else "Đang sử dụng fallback method, cấu hình Google Maps để có kết quả chính xác hơn"
+            }
+        }
+        
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"Lỗi kiểm tra status: {str(e)}",
+            "google_maps_available": False,
+            "google_maps_ready": False
+        }
+
+# test config Google Maps
+
+@router.get("/debug/google-maps-config")
+async def debug_google_maps_config(db: Session = Depends(get_db)):
+    """Debug: Kiểm tra cấu hình Google Maps"""
+    try:
+        # Lấy API key từ database
+        setting = db.query(models.Settings).filter(
+            models.Settings.key == "google_maps_api_key"
+        ).first()
+        
+        if not setting or not setting.value:
+            return {
+                "status": "no_api_key",
+                "message": "Chưa có API key trong database",
+                "has_setting": False,
+                "api_key_preview": None
+            }
+        
+        api_key = setting.value
+        
+        # Kiểm tra format API key
+        if api_key == "YOUR_API_KEY_HERE":
+            return {
+                "status": "default_key",
+                "message": "Đang sử dụng API key mặc định, cần thay thế",
+                "has_setting": True,
+                "api_key_preview": "YOUR_API_KEY_HERE"
+            }
+        
+        # Kiểm tra độ dài API key (Google Maps API key thường dài 39 ký tự)
+        if len(api_key) < 30:
+            return {
+                "status": "invalid_format",
+                "message": f"API key quá ngắn ({len(api_key)} ký tự)",
+                "has_setting": True,
+                "api_key_preview": api_key[:10] + "..." if len(api_key) > 10 else api_key
+            }
+        
+        return {
+            "status": "has_key",
+            "message": "Có API key trong database",
+            "has_setting": True,
+            "api_key_preview": api_key[:10] + "..." + api_key[-5:],
+            "api_key_length": len(api_key),
+            "updated_at": setting.updated_at.isoformat() if setting.updated_at else None
+        }
+        
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"Lỗi kiểm tra cấu hình: {str(e)}",
+            "has_setting": False
+        }
+
+@router.get("/debug/test-raw-google-maps")
+async def test_raw_google_maps(db: Session = Depends(get_db)):
+    """Debug: Test Google Maps API trực tiếp với thông tin chi tiết"""
+    try:
+        # Lấy API key
+        setting = db.query(models.Settings).filter(
+            models.Settings.key == "google_maps_api_key"
+        ).first()
+        
+        if not setting or not setting.value or setting.value == "YOUR_API_KEY_HERE":
+            return {
+                "status": "no_valid_key",
+                "message": "Không có API key hợp lệ"
+            }
+        
+        api_key = setting.value
+        
+        # Import và test Google Maps
+        import googlemaps
+        
+        try:
+            # Tạo client
+            gmaps = googlemaps.Client(key=api_key)
+            
+            # Test với request đơn giản
+            directions_result = gmaps.directions(
+                origin=(10.762622, 106.660172),  # Quận 1
+                destination=(10.732599, 106.719749),  # Quận 7
+                mode="driving",
+                language="vi"
+            )
+            
+            if directions_result:
+                route = directions_result[0]
+                leg = route['legs'][0]
+                
+                return {
+                    "status": "success",
+                    "message": "Google Maps API hoạt động tốt",
+                    "test_result": {
+                        "distance": leg['distance']['text'],
+                        "duration": leg['duration']['text'],
+                        "start_address": leg['start_address'],
+                        "end_address": leg['end_address']
+                    }
+                }
+            else:
+                return {
+                    "status": "no_results",
+                    "message": "Google Maps API không trả về kết quả"
+                }
+                
+        except googlemaps.exceptions.ApiError as e:
+            return {
+                "status": "api_error",
+                "message": f"Google Maps API Error: {str(e)}",
+                "error_type": "ApiError"
+            }
+        except googlemaps.exceptions.HTTPError as e:
+            return {
+                "status": "http_error", 
+                "message": f"Google Maps HTTP Error: {str(e)}",
+                "error_type": "HTTPError"
+            }
+        except Exception as e:
+            return {
+                "status": "unknown_error",
+                "message": f"Lỗi không xác định: {str(e)}",
+                "error_type": type(e).__name__
+            }
+            
+    except ImportError:
+        return {
+            "status": "import_error",
+            "message": "Chưa cài đặt googlemaps library"
+        }
+    except Exception as e:
+        return {
+            "status": "general_error", 
+            "message": f"Lỗi chung: {str(e)}"
+        }
+
+# ================== API SETTINGS MANAGEMENT ==================
+
+@router.get("/settings/{key}")
+async def get_setting(key: str, db: Session = Depends(get_db)):
+    """Lấy giá trị setting theo key"""
+    try:
+        setting = db.query(models.Settings).filter(models.Settings.key == key).first()
+        if not setting:
+            raise HTTPException(status_code=404, detail="Setting không tồn tại")
+        return {
+            "key": setting.key, 
+            "value": setting.value, 
+            "description": setting.description
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Lỗi lấy setting: {str(e)}")
+
+@router.post("/settings")
+async def update_setting(
+    key: str,
+    value: str,
+    description: str = "",
+    db: Session = Depends(get_db)
+):
+    """Cập nhật hoặc tạo mới setting"""
+    try:
+        # Tìm setting hiện tại
+        setting = db.query(models.Settings).filter(models.Settings.key == key).first()
+        
+        if setting:
+            # Update existing
+            setting.value = value
+            if description:
+                setting.description = description
+            setting.updated_at = datetime.now()
+        else:
+            # Create new
+            setting = models.Settings(
+                key=key,
+                value=value,
+                description=description,
+                updated_at=datetime.now()
+            )
+            db.add(setting)
+        
+        db.commit()
+        db.refresh(setting)
+        
+        return {
+            "message": "Cập nhật setting thành công", 
+            "setting": {
+                "key": setting.key,
+                "value": setting.value,
+                "description": setting.description,
+                "updated_at": setting.updated_at.isoformat() if setting.updated_at else None
+            }
+        }
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Lỗi cập nhật setting: {str(e)}")
+
+@router.get("/settings")
+async def get_all_settings(db: Session = Depends(get_db)):
+    """Lấy tất cả settings"""
+    try:
+        settings = db.query(models.Settings).all()
+        return [
+            {
+                "key": s.key, 
+                "value": s.value, 
+                "description": s.description,
+                "updated_at": s.updated_at.isoformat() if s.updated_at else None
+            } 
+            for s in settings
+        ]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Lỗi lấy settings: {str(e)}")
 
 # API health check
 @router.get("/health")

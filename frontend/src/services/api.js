@@ -1,3 +1,5 @@
+// frontend/src/services/api.js - UPDATED VERSION
+
 import axios from 'axios';
 
 const API_BASE_URL = 'http://127.0.0.1:8000';
@@ -15,9 +17,15 @@ export const apiService = {
   // Test connection
   healthCheck: () => api.get('/health'),
   
-  // Price calculation
-  calculatePrice: (data) => api.post('/api/calculate-price', data),
+  // Price calculation - ENHANCED VERSIONS
+  calculatePrice: (data) => api.post('/api/calculate-price', data), // Basic version
+  calculatePriceEnhanced: (data) => api.post('/api/calculate-price-enhanced', data), // With Google Maps
   testDistance: () => api.get('/api/test-distance'),
+  
+  // Google Maps specific
+  testGoogleMaps: () => api.get('/api/test-google-maps'),
+  getCalculationStatus: () => api.get('/api/calculation-status'),
+  debugGoogleMapsTest: () => api.get('/api/debug/detailed-google-maps-test'),
   
   // Price config management
   getPriceConfigs: () => api.get('/api/price-configs'),
@@ -26,7 +34,7 @@ export const apiService = {
   updatePriceConfig: (configName, data) => api.put(`/api/price-configs/${configName}`, data),
   
   // Trip history
-  getTrips: (skip = 0, limit = 100) => api.get(`/api/trips?skip=${skip}&limit=${limit}`),
+  getTrips: (skip = 0, limit = 100) => api.get('/api/trips?skip=${skip}&limit=${limit}'),
 
   // Settings management
   getSetting: (key) => api.get(`/api/settings/${key}`),
