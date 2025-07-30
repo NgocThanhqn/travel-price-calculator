@@ -3,9 +3,19 @@ from sqlalchemy.orm import Session
 from typing import List, Optional, Dict
 from sqlalchemy import text
 
-from ..database.database import get_db
+from app.database.database import get_db
 
 router = APIRouter(prefix="/api/address", tags=["address"])
+
+@router.get("/test")
+async def test_address(db: Session = Depends(get_db)):
+    """Test endpoint để kiểm tra database connection"""
+    try:
+        # Test database connection
+        db.execute("SELECT 1")
+        return {"status": "success", "message": "Database connection OK"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 @router.get("/provinces")
 async def get_provinces(db: Session = Depends(get_db)):

@@ -16,8 +16,12 @@ from models.schemas import (
     Trip
 )
 from utils.price_calculator import PriceCalculator
+# Import address router trực tiếp - CÁCH NÀY ĐỠN GIẢN HƠN
+from .address import router as address_router
 
 router = APIRouter()
+# Include address routes vào router chính
+router.include_router(address_router, tags=["address"])
 
 # API tính giá chuyến đi
 @router.post("/calculate-price", response_model=dict)
