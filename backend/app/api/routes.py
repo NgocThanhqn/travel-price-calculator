@@ -1,29 +1,26 @@
 # backend/app/api/routes.py
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 from typing import List, Optional
 from datetime import datetime
 
 # Import database và models
-from database.database import get_db
-from database.crud import price_config_crud, trip_crud, settings_crud
-from models import models
-from models.schemas import (
+from app.database.database import get_db
+from app.database.crud import price_config_crud, trip_crud, settings_crud
+from app.models import models
+from app.models.schemas import (
     PriceConfig, PriceConfigCreate, PriceConfigUpdate,
     TripCalculationRequest, TripCalculationResponse,
     BookingRequest, BookingResponse,
     Trip
 )
-from utils.price_calculator import PriceCalculator
-# Import address router trực tiếp - CÁCH NÀY ĐỠN GIẢN HƠN
-from .address import router as address_router
+from app.utils.price_calculator import PriceCalculator
 
 router = APIRouter()
-# Include address routes vào router chính
-router.include_router(address_router, tags=["address"])
 
-# API tính giá chuyến đi
+# =================== API tính giá chuyến đi ===================
 @router.post("/calculate-price", response_model=dict)
 async def calculate_trip_price(
     request: TripCalculationRequest,

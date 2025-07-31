@@ -2,7 +2,7 @@
 
 import math
 from typing import Dict, Optional
-from models.schemas import TripCalculationRequest
+from app.models.schemas import TripCalculationRequest
 
 # Import Google Maps calculator với error handling
 try:

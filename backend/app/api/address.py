@@ -5,14 +5,14 @@ from sqlalchemy import text
 
 from app.database.database import get_db
 
-router = APIRouter(prefix="/api/address", tags=["address"])
+router = APIRouter()
 
 @router.get("/test")
 async def test_address(db: Session = Depends(get_db)):
     """Test endpoint để kiểm tra database connection"""
     try:
         # Test database connection
-        db.execute("SELECT 1")
+        db.execute(text("SELECT 1")) 
         return {"status": "success", "message": "Database connection OK"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")

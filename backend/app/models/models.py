@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, Text
 from sqlalchemy.sql import func
-from database.database import Base
+from app.database.database import Base
 
 class PriceConfig(Base):
     """Bảng cấu hình giá"""

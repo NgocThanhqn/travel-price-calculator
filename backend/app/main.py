@@ -2,8 +2,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
-#from api.routes import router as api_router
 from app.api.routes import router as api_router
+from app.api.address import router as address_router
 
 # Khởi tạo FastAPI app
 app = FastAPI(
@@ -23,6 +23,7 @@ app.add_middleware(
 
 # Include API routes
 app.include_router(api_router, prefix="/api", tags=["API"])
+app.include_router(address_router, prefix="/api/address", tags=["Address"])
 
 # Route cơ bản để test
 @app.get("/")
