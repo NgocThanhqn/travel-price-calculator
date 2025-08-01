@@ -6,7 +6,7 @@ from app.models.schemas import TripCalculationRequest
 
 # Import Google Maps calculator với error handling
 try:
-    from utils.google_maps_calculator import GoogleMapsDistanceCalculator
+    from app.utils.google_maps_calculator import GoogleMapsDistanceCalculator
     GOOGLE_MAPS_AVAILABLE = True
 except ImportError:
     GOOGLE_MAPS_AVAILABLE = False
@@ -41,7 +41,9 @@ class PriceCalculator:
         # Thử Google Maps trước nếu có
         if self.google_maps_calculator:
             try:
+                print(f"✅ Google Maps start: ----------------------------------------------------")
                 result = self.google_maps_calculator.calculate_driving_distance(lat1, lng1, lat2, lng2)
+                print(f"✅ Google Maps response: {result} ----------------------------------------------------")
                 if result.get('success'):
                     print(f"✅ Google Maps success: {result['distance_km']} km in {result['duration_minutes']} min")
                     return result

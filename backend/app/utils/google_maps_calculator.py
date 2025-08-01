@@ -3,8 +3,8 @@
 import googlemaps
 import math
 from typing import Dict, Tuple, Optional
-from database.database import SessionLocal
-from models import models
+from app.database.database import SessionLocal
+from app.models import models
 
 class GoogleMapsDistanceCalculator:
     def __init__(self, api_key: str = None):

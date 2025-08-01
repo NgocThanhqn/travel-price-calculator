@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { apiService } from '../services/api';
 import MapSelector from './MapSelector';
 import CompactAddressSelector from './CompactAddressSelector';
@@ -35,6 +35,9 @@ const PriceCalculator = () => {
   });
   const [bookingLoading, setBookingLoading] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState('');
+  // 1. THÊM STATE MỚI để lưu thông tin vé:
+  const [ticketInfo, setTicketInfo] = useState(null);
+  const formRef = useRef(null);
 
   useEffect(() => {
     loadVehicleTypes();
@@ -234,6 +237,46 @@ const PriceCalculator = () => {
     };
   };
 
+  const handleNewBooking = () => {
+    // Reset all states
+    setBookingSuccess('');
+    setTicketInfo(null);
+    setShowBookingForm(false);
+    setResult(null);
+    setError('');
+    
+    // Clear location data
+    setFromCoords({ lat: '', lng: '' });
+    setToCoords({ lat: '', lng: '' });
+    setFromAddress('');
+    setToAddress('');
+    setSelectedLocations({});
+    
+    // Reset vehicle type
+    setVehicleType('4_seats');
+    
+    // Reset booking data
+    setBookingData({
+      customer_name: '',
+      customer_phone: '',
+      customer_email: '',
+      travel_date: '',
+      travel_time: '08:00',
+      passenger_count: 1,
+      notes: ''
+    });
+
+    // Scroll to form địa chỉ
+    setTimeout(() => {
+      if (formRef.current) {
+        formRef.current.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'start'
+        });
+      }
+    }, 100);
+  };
+
   const handleBookingInputChange = (e) => {
     const { name, value } = e.target;
     setBookingData(prev => ({
@@ -269,9 +312,21 @@ const PriceCalculator = () => {
       const response = await apiService.createBooking(bookingRequestData);
       
       if (response.data.success) {
+        // LUU THÔNG TIN VÉ TRƯỚC KHI RESET
+        setTicketInfo({
+          ...bookingData,  // Thông tin khách hàng
+          from_address: fromAddress,
+          to_address: toAddress,
+          vehicle_type_name: vehicleTypes[vehicleType]?.name,
+          distance_km: result.data?.distance_km || result.distance_km || 0,
+          duration_minutes: result.data?.duration_minutes || result.duration_minutes || 0,
+          calculated_price: getAdjustedPrice()?.calculated_price || result.data?.final_price || result.final_price || result.calculated_price || 0,
+          booking_id: response.data.booking_id
+        });
+
         setBookingSuccess(`🎉 Đặt chuyến thành công! Mã đặt chuyến: #${response.data.booking_id}. Chúng tôi sẽ liên hệ với bạn trong thời gian sớm nhất.`);
         
-        // Reset form
+        // Reset form SAU KHI đã lưu thông tin vé
         setBookingData({
           customer_name: '',
           customer_phone: '',
@@ -328,7 +383,7 @@ const PriceCalculator = () => {
   const adjustedResult = getAdjustedPrice();
 
   return (
-    <div className="max-w-6xl mx-auto p-6 bg-white shadow-lg rounded-lg">
+    <div ref={formRef} className="max-w-6xl mx-auto p-6 bg-white shadow-lg rounded-lg">
       <h1 className="text-3xl font-bold text-center mb-8 text-gray-800">
         Tính Giá Chuyến Đi
       </h1>
@@ -585,16 +640,176 @@ const PriceCalculator = () => {
         </div>
       )}
 
+      {bookingSuccess && ticketInfo && (
+        <div className="mb-6 mx-4 bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-xl shadow-lg overflow-hidden">
+          {/* Header */}
+          <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white p-4 text-center">
+            <div className="text-3xl mb-2">✅</div>
+            <h2 className="text-xl font-bold">Đặt vé thành công!</h2>
+            <div className="bg-white bg-opacity-20 rounded-lg px-3 py-1 mt-2 inline-block">
+              <span className="text-sm font-medium">Mã đặt chuyến: #{ticketInfo.booking_id}</span>
+            </div>
+          </div>
+
+          {/* Content */}
+          <div className="p-6 space-y-4">
+            {/* Customer Info */}
+            <div className="bg-white rounded-lg p-4 border border-green-100">
+              <h3 className="flex items-center font-semibold text-gray-800 mb-3">
+                <span className="text-lg mr-2">👤</span>
+                Thông tin khách hàng
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Họ tên:</span>
+                  <span className="font-medium text-gray-800">{ticketInfo.customer_name}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Điện thoại:</span>
+                  <span className="font-medium text-blue-600">{ticketInfo.customer_phone}</span>
+                </div>
+                {ticketInfo.customer_email && (
+                  <div className="flex justify-between md:col-span-2">
+                    <span className="text-gray-600">Email:</span>
+                    <span className="font-medium text-gray-800">{ticketInfo.customer_email}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Trip Info */}
+            <div className="bg-white rounded-lg p-4 border border-green-100">
+              <h3 className="flex items-center font-semibold text-gray-800 mb-3">
+                <span className="text-lg mr-2">🚗</span>
+                Chi tiết chuyến đi
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Ngày đi:</span>
+                  <span className="font-medium text-gray-800">{ticketInfo.travel_date}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Giờ đi:</span>
+                  <span className="font-medium text-gray-800">{ticketInfo.travel_time}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Số khách:</span>
+                  <span className="font-medium text-gray-800">{ticketInfo.passenger_count} người</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Loại xe:</span>
+                  <span className="font-medium text-gray-800">{ticketInfo.vehicle_type_name}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Route Info */}
+            <div className="bg-white rounded-lg p-4 border border-green-100">
+              <h3 className="flex items-center font-semibold text-gray-800 mb-3">
+                <span className="text-lg mr-2">🗺️</span>
+                Tuyến đường
+              </h3>
+              <div className="space-y-3">
+                <div className="flex items-start">
+                  <div className="w-3 h-3 bg-green-500 rounded-full mt-1.5 mr-3 flex-shrink-0"></div>
+                  <div className="flex-1">
+                    <div className="text-xs text-gray-500 mb-1">Điểm đi</div>
+                    <div className="text-sm text-gray-800 font-medium">{ticketInfo.from_address}</div>
+                  </div>
+                </div>
+                
+                <div className="ml-6 border-l-2 border-dashed border-gray-300 h-4"></div>
+                
+                <div className="flex items-start">
+                  <div className="w-3 h-3 bg-red-500 rounded-full mt-1.5 mr-3 flex-shrink-0"></div>
+                  <div className="flex-1">
+                    <div className="text-xs text-gray-500 mb-1">Điểm đến</div>
+                    <div className="text-sm text-gray-800 font-medium">{ticketInfo.to_address}</div>
+                  </div>
+                </div>
+                
+                <div className="mt-4 pt-3 border-t border-gray-100">
+                  <div className="grid grid-cols-2 gap-4 text-center">
+                    <div className="bg-blue-50 rounded-lg p-2">
+                      <div className="text-xs text-blue-600 mb-1">Khoảng cách</div>
+                      <div className="text-sm font-semibold text-blue-800">{ticketInfo.distance_km} km</div>
+                    </div>
+                    <div className="bg-purple-50 rounded-lg p-2">
+                      <div className="text-xs text-purple-600 mb-1">Thời gian dự kiến</div>
+                      <div className="text-sm font-semibold text-purple-800">{ticketInfo.duration_minutes} phút</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Price Info */}
+            <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-lg p-4 border border-orange-200">
+              <div className="text-center">
+                <div className="text-sm text-gray-600 mb-2">Tổng chi phí</div>
+                <div className="text-3xl font-bold text-red-600 mb-2">
+                  {ticketInfo.calculated_price?.toLocaleString('vi-VN')} VNĐ
+                </div>
+                <div className="text-xs text-gray-500">
+                  * Giá đã bao gồm thuế và phí dịch vụ
+                </div>
+              </div>
+            </div>
+
+            {/* Notes */}
+            {ticketInfo.notes && (
+              <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-200">
+                <h4 className="flex items-center font-medium text-gray-800 mb-2">
+                  <span className="text-lg mr-2">📝</span>
+                  Ghi chú đặc biệt
+                </h4>
+                <p className="text-sm text-gray-700 italic">{ticketInfo.notes}</p>
+              </div>
+            )}
+
+            {/* Status & Contact */}
+            <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+              <div className="flex items-center justify-center mb-3">
+                <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse mr-2"></div>
+                <span className="text-sm font-medium text-blue-800">Trạng thái: Đang xử lý</span>
+              </div>
+              <div className="text-center text-sm text-blue-700">
+                <p className="mb-2">📞 Chúng tôi sẽ liên hệ xác nhận trong <strong>15 phút</strong></p>
+                <p className="text-xs text-blue-600">
+                  Nếu có thay đổi, vui lòng gọi: <strong>1900 xxxx</strong>
+                </p>
+              </div>
+            </div>
+
+            {/* Action Button */}
+            <div className="text-center pt-4">
+              <button
+                onClick={() => {
+                  setBookingSuccess('');
+                  setTicketInfo(null);  // Reset ticket info
+                  setShowBookingForm(false);
+                  handleNewBooking();
+                }}
+                className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 font-medium shadow-lg transform hover:scale-105 transition-all duration-200"
+              >
+                <span className="mr-2">🚗</span>
+                Đặt chuyến khác
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Booking Form */}
-      {showBookingForm && result && (
+      {showBookingForm && result && !bookingSuccess && (
         <div className="bg-gradient-to-br from-blue-50 to-indigo-100 border border-blue-200 rounded-lg p-6 shadow-lg">
           <h2 className="text-xl font-bold text-blue-800 mb-4">📞 Đặt chuyến ngay</h2>
-          
-          {bookingSuccess && (
+          {/*{bookingSuccess && (
             <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
               <p className="text-green-700">{bookingSuccess}</p>
             </div>
           )}
+          */}
 
           <form onSubmit={handleBookingSubmit} className="space-y-6">
             {/* Summary */}
