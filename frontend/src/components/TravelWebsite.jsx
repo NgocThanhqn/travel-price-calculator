@@ -1,54 +1,98 @@
 import React, { useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
-import PriceCalculator from './components/PriceCalculator';
-import AdminPage from './pages/AdminPage';
 
-// function App() {
-//   return (
-//     <Router>
-//       <div className="min-h-screen bg-gray-100">
-//         {/* Navigation */}
-//         <nav className="bg-white shadow-sm border-b">
-//           <div className="max-w-6xl mx-auto px-4">
-//             <div className="flex justify-between items-center h-16">
-//               <div className="flex items-center space-x-8">
-//                 <Link to="/" className="text-xl font-bold text-gray-800">
-//                   🚗 Travel Price Calculator
-//                 </Link>
-//                 <div className="flex space-x-4">
-//                   <Link
-//                     to="/"
-//                     className="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md font-medium"
-//                   >
-//                     🏠 Trang chủ
-//                   </Link>
-//                   <Link
-//                     to="/admin"
-//                     className="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md font-medium"
-//                   >
-//                     ⚙️ Quản trị
-//                   </Link>
-//                 </div>
-//               </div>
-//             </div>
-//           </div>
-//         </nav>
+// Mock component PriceCalculator - Thay thế bằng component thực của bạn
+const PriceCalculator = () => {
+  const [result, setResult] = useState(null);
+  
+  const handleTestSample = () => {
+    setResult({
+      distance_km: 125.5,
+      duration_minutes: 180,
+      final_price: 2850000,
+      breakdown: {
+        price_per_km: 20000,
+        distance_cost: 2510000,
+        base_cost: 340000
+      }
+    });
+  };
 
-//         {/* Main content */}
-//         <div className="py-8">
-//           <div className="container mx-auto px-4">
-//             <Routes>
-//               <Route path="/" element={<PriceCalculator />} />
-//               <Route path="/admin" element={<AdminPage />} />
-//             </Routes>
-//           </div>
-//         </div>
-//       </div>
-//     </Router>
-//   );
-// }
+  return (
+    <div className="max-w-4xl mx-auto">
+      <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8">
+        <div className="text-center mb-6">
+          <h3 className="text-2xl md:text-3xl font-bold text-gray-800 mb-4">
+            💰 Tính Giá Chuyến Đi
+          </h3>  
+          <p className="text-gray-600">
+            Nhập tọa độ điểm đi và điểm đến để tính giá
+          </p>
+        </div>
 
-// export default App;
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Tọa độ điểm đi (lat, lng)
+            </label>
+            <input
+              type="text"
+              placeholder="10.762622, 106.660172"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Tọa độ điểm đến (lat, lng)
+            </label>
+            <input
+              type="text"
+              placeholder="10.350000, 107.080000"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+        </div>
+
+        <div className="flex gap-4 mb-6">
+          <button
+            onClick={handleTestSample}
+            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
+          >
+            Điền dữ liệu mẫu
+          </button>
+          <button
+            onClick={handleTestSample}
+            className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
+          >
+            Tính giá
+          </button>
+        </div>
+
+        {result && (
+          <div className="bg-gradient-to-r from-green-50 to-blue-50 p-6 rounded-xl border-l-4 border-green-500">
+            <h4 className="font-bold text-lg text-gray-800 mb-4">
+              ✅ Kết quả tính giá
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-white p-4 rounded-lg text-center">
+                <p className="text-gray-600">Khoảng cách</p>
+                <p className="font-bold text-xl text-blue-600">{result.distance_km} km</p>
+              </div>
+              <div className="bg-white p-4 rounded-lg text-center">
+                <p className="text-gray-600">Thời gian</p>
+                <p className="font-bold text-xl text-green-600">{Math.floor(result.duration_minutes / 60)}h {result.duration_minutes % 60}m</p>
+              </div>
+              <div className="bg-white p-4 rounded-lg text-center">
+                <p className="text-gray-600">Tổng giá</p>
+                <p className="font-bold text-xl text-red-600">{result.final_price.toLocaleString('vi-VN')} VNĐ</p>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const TravelWebsite = () => {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
 
@@ -294,8 +338,4 @@ const TravelWebsite = () => {
   );
 };
 
-function App() {
-  return <TravelWebsite />;
-}
-
-export default App;
+export default TravelWebsite;

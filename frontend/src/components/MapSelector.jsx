@@ -61,7 +61,8 @@ const MapSelector = ({ onLocationSelect, selectedLocations }) => {
     const map = new window.google.maps.Map(mapRef.current, {
       center: { lat: 10.762622, lng: 106.660172 }, // TP.HCM center
       zoom: 12,
-      mapTypeId: 'roadmap'
+      mapTypeId: 'roadmap',
+      gestureHandling: 'greedy'
     });
 
     mapInstanceRef.current = map;
