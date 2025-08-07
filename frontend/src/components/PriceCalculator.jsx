@@ -3,7 +3,13 @@ import { apiService } from '../services/api';
 import MapSelector from './MapSelector';
 import CompactAddressSelector from './CompactAddressSelector';
 
+import googleMapsLoader from '../utils/googleMapsLoader';
+
 const PriceCalculator = () => {
+  const [mapsReady, setMapsReady] = useState(false);
+  const [mapsLoading, setMapsLoading] = useState(false);
+  const [mapsError, setMapsError] = useState('');
+
   const [fromCoords, setFromCoords] = useState({ lat: '', lng: '' });
   const [toCoords, setToCoords] = useState({ lat: '', lng: '' });
   const [fromAddress, setFromAddress] = useState('');
@@ -50,6 +56,87 @@ const PriceCalculator = () => {
       travel_date: tomorrow.toISOString().split('T')[0]
     }));
   }, []);
+
+  // Khởi tạo Google Maps ngay khi component mount
+  useEffect(() => {
+    const initializeMaps = async () => {
+      try {
+        setMapsLoading(true);
+        console.log('🗺️ Initializing Google Maps for geocoding...');
+        
+        // Sử dụng GoogleMapsLoader của bạn
+        await googleMapsLoader.load();
+        
+        setMapsReady(true);
+        setMapsError('');
+        console.log('✅ Google Maps ready for geocoding in PriceCalculator');
+        
+      } catch (error) {
+        setMapsError(error.message);
+        console.error('❌ Maps initialization failed:', error);
+      } finally {
+        setMapsLoading(false);
+      }
+    };
+
+    initializeMaps();
+  }, []);
+
+  // Cập nhật geocoding function để sử dụng GoogleMapsLoader
+  const geocodeAddress = async (address) => {
+    try {
+      if (!mapsReady) {
+        throw new Error('Google Maps chưa sẵn sàng. Vui lòng chờ...');
+      }
+
+      console.log('🔍 Geocoding address:', address);
+      
+      // Sử dụng method geocodeAddress từ GoogleMapsLoader
+      const coords = await googleMapsLoader.geocodeAddress(address);
+      
+      console.log('✅ Geocoding success:', coords);
+      return coords;
+      
+    } catch (error) {
+      console.error('❌ Geocoding failed:', error);
+      throw error;
+    }
+  };
+  // Cập nhật search handler
+  const handleSearch = async (e) => {
+    e.preventDefault();
+    const searchQuery = e.target.search.value.trim();
+    
+    if (!searchQuery) return;
+
+    if (!mapsReady) {
+      setError('Google Maps đang khởi tạo, vui lòng chờ...');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError('');
+      
+      const coords = await geocodeAddress(searchQuery);
+      
+      if (coords.lat && coords.lng) {
+        // Handle location select based on current mode
+        if (selectingFromAddress) {
+          handleFromAddressSelect(coords);
+        } else if (selectingToAddress) {
+          handleToAddressSelect(coords);
+        }
+        
+        // Clear search after selection
+        e.target.search.value = '';
+      }
+    } catch (error) {
+      setError('Lỗi tìm kiếm: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const loadApiKey = async () => {
     try {
@@ -387,7 +474,36 @@ const PriceCalculator = () => {
       <h1 className="text-3xl font-bold text-center mb-8 text-gray-800">
         Tính Giá Chuyến Đi
       </h1>
-
+      
+      {/* Maps Status Indicator */}
+        {mapsLoading && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-4">
+            <div className="flex items-center justify-center space-x-2">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+              <p className="text-blue-700 text-sm">
+                🗺️ Đang khởi tạo Google Maps... Tính năng tìm kiếm sẽ hoạt động sau ít giây.
+              </p>
+            </div>
+          </div>
+        )}
+        
+        {mapsReady && (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-4">
+            <p className="text-green-700 text-sm">
+              ✅ Google Maps đã sẵn sàng! Bạn có thể tìm kiếm địa chỉ và chọn trên bản đồ.
+            </p>
+          </div>
+        )}
+        
+        {mapsError && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-3 mt-4">
+            <p className="text-red-700 text-sm">
+              ❌ Lỗi khởi tạo Maps: {mapsError}. 
+              <a href="/admin" className="underline ml-1">Kiểm tra cấu hình API Key</a>
+            </p>
+          </div>
+        )}
+      
       {/* Input Form */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         {/* Điểm đi */}
@@ -788,6 +904,7 @@ const PriceCalculator = () => {
                   setBookingSuccess('');
                   setTicketInfo(null);  // Reset ticket info
                   setShowBookingForm(false);
+                  setBookingData();
                   handleNewBooking();
                 }}
                 className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 font-medium shadow-lg transform hover:scale-105 transition-all duration-200"
