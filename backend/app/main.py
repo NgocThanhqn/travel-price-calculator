@@ -4,6 +4,7 @@ import uvicorn
 
 from app.api.routes import router as api_router
 from app.api.address import router as address_router
+from app.api.tier_routes import router as tier_price_router
 
 # Khởi tạo FastAPI app
 app = FastAPI(
@@ -24,6 +25,7 @@ app.add_middleware(
 # Include API routes
 app.include_router(api_router, prefix="/api", tags=["API"])
 app.include_router(address_router, prefix="/api/address", tags=["Address"])
+app.include_router(tier_price_router, prefix="/api", tags=["Tier Prive"])
 
 # Route cơ bản để test
 @app.get("/")

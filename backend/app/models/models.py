@@ -1,5 +1,7 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, Text
+from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, Text, JSON
 from sqlalchemy.sql import func
+from sqlalchemy.ext.declarative import declarative_base
+from datetime import datetime
 from app.database.database import Base
 
 class PriceConfig(Base):
@@ -15,6 +17,17 @@ class PriceConfig(Base):
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+class TierPriceConfigModel(Base):
+    __tablename__ = "tier_price_configs"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, unique=True, index=True)
+    base_price = Column(Float)
+    tiers = Column(JSON)  # Lưu dạng JSON
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 class Trip(Base):
     """Bảng lưu lịch sử các chuyến đi"""

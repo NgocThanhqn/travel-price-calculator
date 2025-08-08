@@ -29,6 +29,28 @@ class PriceConfig(PriceConfigBase):
     class Config:
         from_attributes = True
 
+class PriceTier(BaseModel):
+    """Một bậc giá theo khoảng cách"""
+    from_km: float
+    to_km: Optional[float]  # None = không giới hạn
+    price_per_km: float
+    description: Optional[str] = None
+
+class TierPriceConfig(BaseModel):
+    """Cấu hình giá theo bậc"""
+    id: Optional[int] = None
+    name: str
+    base_price: float  # Giá khởi điểm
+    tiers: List[PriceTier]
+    is_active: bool = True
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None
+
+class TierPriceConfigCreate(BaseModel):
+    name: str
+    base_price: float
+    tiers: List[PriceTier]
+    
 # Schema cho yêu cầu tính giá
 class TripCalculationRequest(BaseModel):
     from_lat: float
