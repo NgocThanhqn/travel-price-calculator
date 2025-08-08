@@ -13,7 +13,7 @@ const MapSelector = ({ onLocationSelect, selectedLocations }) => {
   const [apiKey, setApiKey] = useState('');
   const [loading, setLoading] = useState(true);
   const [mapsReady, setMapsReady] = useState(false);
-
+  const directionsRendererRef = useRef(null);
   // useEffect(() => {
   //   loadApiKey();
   // }, []);
@@ -286,13 +286,26 @@ const MapSelector = ({ onLocationSelect, selectedLocations }) => {
   const clearMarkers = () => {
     markersRef.current.forEach(marker => marker.setMap(null));
     markersRef.current = [];
+
+    // Clear all markers
+    markersRef.current.forEach(marker => {
+      if (marker) {
+        marker.setMap(null);
+      }
+    });
+    markersRef.current = [];
+
+    // Clear routes
+    if (directionsRendererRef.current) {
+      directionsRendererRef.current.setDirections({ routes: [] });
+    }
   };
 
   // Update markers when selectedLocations change
   useEffect(() => {
     if (!mapLoaded || !selectedLocations) return;
 
-    //clearMarkers();
+    clearMarkers();
 
     if (selectedLocations.from) {
       addMarker(selectedLocations.from, 'A', 'green');
@@ -309,19 +322,32 @@ const MapSelector = ({ onLocationSelect, selectedLocations }) => {
   }, [selectedLocations, mapLoaded]);
 
   const drawRoute = (from, to) => {
+    if (!from || !to || !mapInstanceRef.current) return;
+
+    // Tạo hoặc sử dụng lại DirectionsRenderer
+    if (!directionsRendererRef.current) {
+      directionsRendererRef.current = new window.google.maps.DirectionsRenderer({
+        map: mapInstanceRef.current,
+        suppressMarkers: true, // We handle markers ourselves
+        polylineOptions: {
+          strokeColor: '#4F46E5',
+          strokeWeight: 4,
+          strokeOpacity: 0.8
+        }
+      });
+    }
+
     const directionsService = new window.google.maps.DirectionsService();
-    const directionsRenderer = new window.google.maps.DirectionsRenderer({
-      map: mapInstanceRef.current,
-      suppressMarkers: true // We'll use our own markers
-    });
 
     directionsService.route({
-      origin: from,
-      destination: to,
+      origin: { lat: from.lat, lng: from.lng },
+      destination: { lat: to.lat, lng: to.lng },
       travelMode: window.google.maps.TravelMode.DRIVING,
     }, (result, status) => {
       if (status === 'OK') {
-        directionsRenderer.setDirections(result);
+        directionsRendererRef.current.setDirections(result);
+      } else {
+        console.error('Directions request failed:', status);
       }
     });
   };

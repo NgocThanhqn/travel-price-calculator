@@ -650,12 +650,12 @@ const PriceCalculator = () => {
           {loading ? 'Đang tính toán...' : 'Tính giá'}
         </button>
 
-        <button
+        {/* <button
           onClick={handleTestCalculation}
           className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold"
         >
           Test mẫu
-        </button>
+        </button> */}
       </div>
 
       {/* Error Display */}
