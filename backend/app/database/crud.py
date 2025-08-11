@@ -62,7 +62,27 @@ class SettingsCRUD:
     
     def get_all_settings(self, db: Session) -> List[models.Settings]:
         return db.query(models.Settings).all()
-
+        
+    def set_setting(self, db: Session, key: str, value: str, description: str = None):
+        """Set hoặc update setting"""
+        db_setting = self.get_setting(db, key)
+        if db_setting:
+            # Update existing
+            db_setting.value = value
+            if description:
+                db_setting.description = description
+        else:
+            # Create new
+            db_setting = models.Settings(
+                key=key,
+                value=value,
+                description=description or f"Setting for {key}"
+            )
+            db.add(db_setting)
+        
+        db.commit()
+        db.refresh(db_setting)
+        return db_setting
 # Tạo instances
 price_config_crud = PriceConfigCRUD()
 trip_crud = TripCRUD()

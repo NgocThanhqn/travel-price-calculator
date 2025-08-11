@@ -12,10 +12,13 @@ from app.database.crud import price_config_crud, trip_crud, settings_crud
 from app.models import models
 from app.models.schemas import (
     PriceConfig, PriceConfigCreate, PriceConfigUpdate,
-    TripCalculationRequest, TripCalculationResponse,
+    TierPriceCalculationResponse,TierPriceCalculationRequest,TierPriceConfigUpdate,TierPriceConfigCreate,TierPriceConfig,
+    PriceTier,TripCalculationRequest,
     BookingRequest, BookingResponse,
     Trip
 )
+from app.crud.tier_pricing import tier_pricing_crud
+from app.utils.tier_calculator import TierPriceCalculator
 from app.utils.price_calculator import PriceCalculator
 
 router = APIRouter()
@@ -449,65 +452,282 @@ async def detailed_google_maps_test(db: Session = Depends(get_db)):
         }
 
 # API tính giá với Google Maps (enhanced)
-@router.post("/calculate-price-enhanced", response_model=dict)
+# @router.post("/calculate-price-enhanced", response_model=dict)
+# async def calculate_price_enhanced(
+#     request: TripCalculationRequest,
+#     db: Session = Depends(get_db)
+# ):
+#     """Tính giá với Google Maps và fallback mechanism"""
+#     try:
+#         # Lấy cấu hình giá
+#         config = price_config_crud.get_config(db, "default")
+#         if not config:
+#             raise HTTPException(status_code=404, detail="Không tìm thấy cấu hình giá")
+        
+#         # Tính giá theo loại xe
+#         vehicle_multiplier = {
+#             "4_seats": 1.0,
+#             "7_seats": 1.2,
+#             "16_seats": 1.5
+#         }.get(getattr(request, 'vehicle_type', '4_seats'), 1.0)
+        
+#         # Tạo smart calculator
+#         calculator = PriceCalculator(
+#             base_price=config.base_price * vehicle_multiplier,
+#             price_per_km=config.price_per_km * vehicle_multiplier,
+#             min_price=config.min_price * vehicle_multiplier,
+#             max_price=config.max_price * vehicle_multiplier,
+#             use_google_maps=True  # Enable Google Maps với fallback
+#         )
+        
+#         # Tính toán
+#         result = calculator.calculate_trip(request)
+        
+#         # Lưu vào database
+#         trip_data = {
+#             "from_lat": request.from_lat,
+#             "from_lng": request.from_lng,
+#             "to_lat": request.to_lat,
+#             "to_lng": request.to_lng,
+#             "distance_km": result["distance_km"],
+#             "duration_minutes": result["duration_minutes"],
+#             "calculated_price": result["calculated_price"],
+#             "config_used": "default"
+#         }
+        
+#         db_trip = trip_crud.create_trip(db, trip_data)
+        
+#         # Thêm metadata
+#         result["metadata"] = {
+#             "calculation_method": result.get("calculation_method"),
+#             "vehicle_multiplier": vehicle_multiplier,
+#             "google_maps_available": GOOGLE_MAPS_AVAILABLE,
+#             "trip_id": db_trip.id if db_trip else None,
+#             "calculation_status": calculator.get_calculation_status()
+#         }
+        
+#         return result
+        
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=f"Lỗi tính toán: {str(e)}")
+
+@router.get("/active-config")
+async def get_active_config(db: Session = Depends(get_db)):
+    """Lấy cấu hình tính giá đang active"""
+    try:
+        # Lấy setting active_pricing_config
+        active_config_setting = settings_crud.get_setting(db, "active_pricing_config")
+        if not active_config_setting:
+            # Mặc định là simple pricing
+            return {
+                "type": "simple",
+                "config_name": "default",
+                "config": None
+            }
+        
+        config_value = active_config_setting.value
+        
+        # Parse config value: "simple:default" hoặc "tier:standard"
+        if ":" in config_value:
+            config_type, config_name = config_value.split(":", 1)
+        else:
+            config_type = "simple"
+            config_name = config_value
+        
+        if config_type == "tier":
+            # Lấy tier config
+            tier_config = tier_pricing_crud.get_config(db, config_name)
+            if not tier_config:
+                raise HTTPException(status_code=404, detail=f"Tier config '{config_name}' không tồn tại")
+            
+            return {
+                "type": "tier",
+                "config_name": config_name,
+                "config": {
+                    "name": tier_config.name,
+                    "base_price": tier_config.base_price,
+                    "tiers": tier_config.tiers
+                }
+            }
+        else:
+            # Lấy simple config
+            simple_config = price_config_crud.get_config(db, config_name)
+            if not simple_config:
+                raise HTTPException(status_code=404, detail=f"Simple config '{config_name}' không tồn tại")
+            
+            return {
+                "type": "simple", 
+                "config_name": config_name,
+                "config": {
+                    "name": simple_config.config_name,
+                    "base_price": simple_config.base_price,
+                    "price_per_km": simple_config.price_per_km,
+                    "min_price": simple_config.min_price,
+                    "max_price": simple_config.max_price
+                }
+            }
+            
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Lỗi lấy active config: {str(e)}")
+
+@router.post("/set-active-config")
+async def set_active_config(
+    config_type: str,  # "simple" hoặc "tier"
+    config_name: str,
+    db: Session = Depends(get_db)
+):
+    """Set cấu hình tính giá active"""
+    try:
+        # Validate config exists
+        if config_type == "tier":
+            tier_config = tier_pricing_crud.get_config(db, config_name)
+            if not tier_config:
+                raise HTTPException(status_code=404, detail=f"Tier config '{config_name}' không tồn tại")
+        elif config_type == "simple":
+            simple_config = price_config_crud.get_config(db, config_name)
+            if not simple_config:
+                raise HTTPException(status_code=404, detail=f"Simple config '{config_name}' không tồn tại")
+        else:
+            raise HTTPException(status_code=400, detail="Config type phải là 'simple' hoặc 'tier'")
+        
+        # Save setting
+        config_value = f"{config_type}:{config_name}"
+        settings_crud.set_setting(db, "active_pricing_config", config_value)
+        
+        return {
+            "message": f"Đã set active config: {config_type}:{config_name}",
+            "type": config_type,
+            "config_name": config_name
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Lỗi set active config: {str(e)}")
+
+# ===== ENHANCED CALCULATE PRICE =====
+@router.post("/calculate-price-enhanced")
 async def calculate_price_enhanced(
     request: TripCalculationRequest,
     db: Session = Depends(get_db)
 ):
-    """Tính giá với Google Maps và fallback mechanism"""
+    """Tính giá nâng cao theo active config"""
     try:
-        # Lấy cấu hình giá
-        config = price_config_crud.get_config(db, "default")
-        if not config:
-            raise HTTPException(status_code=404, detail="Không tìm thấy cấu hình giá")
+        # Validate distance
+        if request.distance_km is None or request.distance_km <= 0:
+            raise HTTPException(status_code=400, detail="distance_km phải > 0")
         
-        # Tính giá theo loại xe
-        vehicle_multiplier = {
-            "4_seats": 1.0,
-            "7_seats": 1.2,
-            "16_seats": 1.5
-        }.get(getattr(request, 'vehicle_type', '4_seats'), 1.0)
+        # Lấy active config
+        active_config_response = await get_active_config(db)
+        config_type = active_config_response["type"]
+        config_name = active_config_response["config_name"]
+        config_data = active_config_response["config"]
         
-        # Tạo smart calculator
-        calculator = PriceCalculator(
-            base_price=config.base_price * vehicle_multiplier,
-            price_per_km=config.price_per_km * vehicle_multiplier,
-            min_price=config.min_price * vehicle_multiplier,
-            max_price=config.max_price * vehicle_multiplier,
-            use_google_maps=True  # Enable Google Maps với fallback
-        )
+        # Fallback nếu không có config
+        if not config_data:
+            # Dùng default simple config
+            config_data = {
+                "base_price": 10000,
+                "price_per_km": 5000,
+                "min_price": 20000,
+                "max_price": 500000
+            }
+            config_type = "simple"
+            config_name = "default"
         
-        # Tính toán
-        result = calculator.calculate_trip(request)
+        if config_type == "tier":
+            # Sử dụng tier pricing
+            calculator = TierPriceCalculator(config_data["base_price"], config_data["tiers"])
+            result = calculator.calculate_price(request.distance_km)
+            
+            # Thêm thông tin cấu hình
+            result.update({
+                "config_type": "tier",
+                "config_name": config_name,
+                "from_address": request.from_address or 'Điểm A',
+                "to_address": request.to_address or 'Điểm B',
+                "duration_minutes": request.duration_minutes
+            })
+            
+        else:
+            # Sử dụng simple pricing
+            config = config_data
+            calculator = PriceCalculator(
+                base_price=config["base_price"],
+                price_per_km=config["price_per_km"], 
+                min_price=config["min_price"],
+                max_price=config["max_price"]
+            )
+            
+            # Tạo fake request cho simple calculator
+            class SimpleRequest:
+                def __init__(self, distance_km, from_address, to_address):
+                    self.distance_km = distance_km
+                    self.from_address = from_address
+                    self.to_address = to_address
+            
+            simple_request = SimpleRequest(
+                request.distance_km,
+                request.from_address or 'Điểm A',
+                request.to_address or 'Điểm B'
+            )
+            
+            result = calculator.calculate_trip(simple_request)
+            result.update({
+                "config_type": "simple",
+                "config_name": config_name,
+                "duration_minutes": request.duration_minutes
+            })
         
-        # Lưu vào database
-        trip_data = {
-            "from_lat": request.from_lat,
-            "from_lng": request.from_lng,
-            "to_lat": request.to_lat,
-            "to_lng": request.to_lng,
-            "distance_km": result["distance_km"],
-            "duration_minutes": result["duration_minutes"],
-            "calculated_price": result["calculated_price"],
-            "config_used": "default"
-        }
-        
-        db_trip = trip_crud.create_trip(db, trip_data)
-        
-        # Thêm metadata
-        result["metadata"] = {
-            "calculation_method": result.get("calculation_method"),
-            "vehicle_multiplier": vehicle_multiplier,
-            "google_maps_available": GOOGLE_MAPS_AVAILABLE,
-            "trip_id": db_trip.id if db_trip else None,
-            "calculation_status": calculator.get_calculation_status()
-        }
+        # Lưu trip vào database
+        try:
+            trip_data = {
+                "from_address": result.get("from_address", "Điểm A"),
+                "to_address": result.get("to_address", "Điểm B"),
+                "from_lat": request.from_lat,
+                "from_lng": request.from_lng,
+                "to_lat": request.to_lat,
+                "to_lng": request.to_lng,
+                "distance_km": request.distance_km,
+                "duration_minutes": result.get("duration_minutes"),
+                "calculated_price": result.get("total_price") or result.get("calculated_price"),
+                "config_used": f"{config_type}:{config_name}"
+            }
+            trip_crud.create_trip(db, trip_data)
+        except Exception as trip_error:
+            print(f"Warning: Could not save trip: {trip_error}")
         
         return result
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Lỗi tính toán: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Lỗi tính giá enhanced: {str(e)}")
 
+# ===== TEST ENDPOINTS =====
+
+@router.get("/test-active-config")
+async def test_active_config(distance_km: float = 25, db: Session = Depends(get_db)):
+    """Test tính giá với active config"""
+    try:
+        # Tạo request test
+        test_request = TripCalculationRequest(
+            distance_km=distance_km,
+            from_address="Điểm test A",
+            to_address="Điểm test B"
+        )
+        
+        # Tính giá
+        result = await calculate_price_enhanced(test_request, db)
+        
+        return {
+            "test_distance": distance_km,
+            "result": result,
+            "message": f"Test tính giá {distance_km}km thành công"
+        }
+        
+    except Exception as e:
+        return {
+            "error": str(e),
+            "message": "Lỗi test active config"
+        }
+        
 # API kiểm tra status tính toán
 @router.get("/calculation-status")
 async def get_calculation_status():
