@@ -303,26 +303,62 @@ const PriceCalculator = () => {
     setSelectedLocations({ from: fromLoc, to: toLoc });
   };
 
+  // const getAdjustedPrice = () => {
+  //   if (!result || !vehicleTypes[vehicleType]) return null;
+    
+  //   // Thử nhiều cách để lấy giá cơ bản
+  //   const basePrice = result.data?.final_price || 
+  //                    result.data?.base_price || 
+  //                    result.final_price || 
+  //                    result.base_price || 
+  //                    result.calculated_price || 
+  //                    0;
+    
+  //   const multiplier = vehicleTypes[vehicleType].price_multiplier || 1;
+  //   const adjustedPrice = Math.round(basePrice * multiplier);
+    
+  //   return {
+  //     calculated_price: adjustedPrice,
+  //     original_price: basePrice,
+  //     vehicle_multiplier: multiplier
+  //   };
+  // };
+
   const getAdjustedPrice = () => {
-    if (!result || !vehicleTypes[vehicleType]) return null;
-    
-    // Thử nhiều cách để lấy giá cơ bản
-    const basePrice = result.data?.final_price || 
-                     result.data?.base_price || 
-                     result.final_price || 
-                     result.base_price || 
-                     result.calculated_price || 
-                     0;
-    
-    const multiplier = vehicleTypes[vehicleType].price_multiplier || 1;
-    const adjustedPrice = Math.round(basePrice * multiplier);
-    
-    return {
-      calculated_price: adjustedPrice,
-      original_price: basePrice,
-      vehicle_multiplier: multiplier
-    };
+  if (!result || !vehicleTypes[vehicleType]) return null;
+  
+  // Thử nhiều cách để lấy giá cơ bản - THÊM SUPPORT CHO TIER PRICING
+  const basePrice = result.data?.total_price ||       // Tier pricing
+                   result.data?.calculated_price ||   // Simple pricing 
+                   result.data?.final_price ||        
+                   result.total_price ||              // Direct tier response
+                   result.calculated_price ||
+                   result.final_price || 
+                   result.base_price || 
+                   0;
+  
+  const multiplier = vehicleTypes[vehicleType].price_multiplier || 1;
+  const adjustedPrice = Math.round(basePrice * multiplier);
+  
+  return {
+    calculated_price: adjustedPrice,
+    original_price: basePrice,
+    vehicle_multiplier: multiplier
   };
+};
+
+const getDisplayPrice = () => {
+  // Kiểm tra nếu là tier pricing (có total_price)
+  if (result?.total_price || result?.data?.total_price) {
+    const tierPrice = result?.total_price || result?.data?.total_price || 0;
+    const multiplier = vehicleTypes[vehicleType]?.price_multiplier || 1.0;
+    return Math.round(tierPrice * multiplier);
+  }
+  
+  // Fallback cho simple pricing
+  const adjustedResult = getAdjustedPrice();
+  return adjustedResult?.calculated_price || 0;
+};
 
   const handleNewBooking = () => {
     // Reset all states
@@ -432,6 +468,83 @@ const PriceCalculator = () => {
     } finally {
       setBookingLoading(false);
     }
+  };
+
+  const renderPriceBreakdown = () => {
+    // Nếu là tier pricing response
+    if (result?.price_breakdown || result?.data?.price_breakdown) {
+      const breakdown = result?.price_breakdown || result?.data?.price_breakdown || [];
+      const basePrice = result?.base_price || result?.data?.base_price || 0;
+      
+      return (
+        <div className="border-t border-gray-200 pt-4">
+          <h4 classNsame="font-semibold mb-3 text-gray-700">💡 Chi tiết tính giá theo bậc:</h4>
+          
+          {/* Base price */}
+          <div className="bg-white p-3 rounded-lg mb-2">
+            <div className="flex justify-between">
+              <span className="text-gray-600">Giá khởi điểm:</span>
+              <span className="font-semibold text-blue-600">{basePrice?.toLocaleString('vi-VN')} VNĐ</span>
+            </div>
+          </div>
+          
+          {/* Tier breakdown */}
+          {breakdown.map((tier, index) => (
+            <div key={index} className="bg-white p-3 rounded-lg mb-2">
+              <div className="flex justify-between">
+                <span className="text-gray-600">{tier.description || tier.tier}:</span>
+                <span className="font-semibold text-orange-600">+{tier.tier_price?.toLocaleString('vi-VN')} VNĐ</span>
+              </div>
+              <div className="text-xs text-gray-500">
+                {tier.distance}km × {tier.price_per_km?.toLocaleString('vi-VN')} VNĐ/km
+              </div>
+            </div>
+          ))}
+          
+          {/* Vehicle multiplier */}
+          {vehicleTypes[vehicleType]?.price_multiplier !== 1.0 && (
+            <div className="bg-purple-50 p-3 rounded-lg">
+              <div className="flex justify-between">
+                <span className="text-gray-600">Hệ số xe {vehicleTypes[vehicleType]?.name}:</span>
+                <span className="font-semibold text-purple-600">×{vehicleTypes[vehicleType]?.price_multiplier}</span>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+    
+    // Fallback cho simple pricing
+    if (result.data?.breakdown || result.breakdown) {
+      const breakdown = result.data?.breakdown || result.breakdown;
+      return (
+        <div className="border-t border-gray-200 pt-4">
+          <h4 className="font-semibold mb-3 text-gray-700">💡 Chi tiết tính giá:</h4>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+            <div className="bg-white p-3 rounded-lg">
+              <p className="text-gray-600">Giá cơ bản</p>
+              <p className="font-semibold text-blue-600">
+                {(breakdown?.base_price || 0).toLocaleString('vi-VN')} VNĐ
+              </p>
+            </div>
+            <div className="bg-white p-3 rounded-lg">
+              <p className="text-gray-600">Giá theo km</p>
+              <p className="font-semibold text-orange-600">
+                {(breakdown?.price_per_km || 0).toLocaleString('vi-VN')} VNĐ
+              </p>
+            </div>
+            <div className="bg-white p-3 rounded-lg">
+              <p className="text-gray-600">Loại xe</p>
+              <p className="font-semibold text-purple-600">
+                {vehicleTypes[vehicleType]?.name} (×{vehicleTypes[vehicleType]?.price_multiplier})
+              </p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    
+    return null;
   };
 
   // Nếu đang hiển thị map selector
@@ -685,9 +798,9 @@ const PriceCalculator = () => {
                 }`}>
                 </span>
                 {(result.data?.calculation_method || result.calculation_method) === 'google_maps' ? '🗺️ Google Maps' : 
-                 (result.data?.calculation_method || result.calculation_method) === 'enhanced_haversine' ? '🧮 Ước tính nâng cao' :
-                 (result.data?.calculation_method || result.calculation_method) === 'haversine_adjusted' ? '📐 Ước tính điều chỉnh' : 
-                 '🔍 Đang tính toán'}
+                (result.data?.calculation_method || result.calculation_method) === 'enhanced_haversine' ? '🧮 Ước tính nâng cao' :
+                (result.data?.calculation_method || result.calculation_method) === 'haversine_adjusted' ? '📐 Ước tính điều chỉnh' : 
+                '🔍 Đang tính toán'}
               </p>
             </div>
             
@@ -701,43 +814,27 @@ const PriceCalculator = () => {
             <div className="text-center">
               <p className="text-sm text-gray-600 mb-1">Tổng chi phí</p>
               <p className="text-3xl font-bold text-green-600">
-                {(adjustedResult?.calculated_price || result.data?.final_price || result.final_price || result.calculated_price || 0).toLocaleString('vi-VN')} 
+                {getDisplayPrice().toLocaleString('vi-VN')} 
                 <span className="text-lg ml-1">VNĐ</span>
               </p>
-              {adjustedResult?.vehicle_multiplier !== 1.0 && (
+              {vehicleTypes[vehicleType]?.price_multiplier !== 1.0 && (
                 <p className="text-sm text-gray-500 mt-1">
-                  (Giá gốc: {adjustedResult?.original_price?.toLocaleString('vi-VN')} VNĐ × {adjustedResult?.vehicle_multiplier})
+                  (Giá gốc: {(result.total_price || result.data?.total_price || result.calculated_price || result.data?.calculated_price || 0).toLocaleString('vi-VN')} VNĐ × {vehicleTypes[vehicleType]?.price_multiplier})
                 </p>
               )}
+              
+              {/* Hiển thị loại pricing */}
+              <p className="text-xs text-gray-500 mt-2">
+                {(result.config_type || result.data?.config_type) === 'tier' ? 
+                  `📊 Tính giá theo bậc (${result.config_name || result.data?.config_name})` : 
+                  `📈 Tính giá đơn giản (${result.config_name || result.data?.config_name})`
+                }
+              </p>
             </div>
           </div>
 
-          {/* Price breakdown */}
-          {(result.data?.breakdown || result.data?.price_info || result.breakdown || result.price_info) && (
-            <div className="border-t border-gray-200 pt-4">
-              <h4 className="font-semibold mb-3 text-gray-700">💡 Chi tiết tính giá:</h4>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                <div className="bg-white p-3 rounded-lg">
-                  <p className="text-gray-600">Giá cơ bản</p>
-                  <p className="font-semibold text-blue-600">
-                    {(result.data?.breakdown?.base_price || result.data?.price_info?.base_price || result.data?.base_price || result.breakdown?.base_price || result.price_info?.base_price || result.base_price || 0)?.toLocaleString('vi-VN')} VNĐ
-                  </p>
-                </div>
-                <div className="bg-white p-3 rounded-lg">
-                  <p className="text-gray-600">Giá theo km</p>
-                  <p className="font-semibold text-orange-600">
-                    {(result.data?.breakdown?.price_per_km || result.data?.price_info?.price_per_km || result.data?.distance_price || result.breakdown?.price_per_km || result.price_info?.price_per_km || result.distance_price || 0)?.toLocaleString('vi-VN')} VNĐ
-                  </p>
-                </div>
-                <div className="bg-white p-3 rounded-lg">
-                  <p className="text-gray-600">Loại xe</p>
-                  <p className="font-semibold text-purple-600">
-                    {vehicleTypes[vehicleType]?.name} (×{vehicleTypes[vehicleType]?.price_multiplier})
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
+          {/* Price breakdown - nếu muố show chi tiết giá thì bật nó lên */}
+          {/* {renderPriceBreakdown()} */}
 
           {/* Book Now Button */}
           {!showBookingForm && (
