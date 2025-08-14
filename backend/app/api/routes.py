@@ -20,6 +20,7 @@ from app.models.schemas import (
 from app.crud.tier_pricing import tier_pricing_crud
 from app.utils.tier_calculator import TierPriceCalculator
 from app.utils.price_calculator import PriceCalculator
+from app.utils.simple_email_service import simple_email_service
 
 router = APIRouter()
 
@@ -114,7 +115,7 @@ async def create_booking(
     booking: BookingRequest,
     db: Session = Depends(get_db)
 ):
-    """Tạo đặt chuyến với thông tin khách hàng"""
+    """Tạo đặt chuyến và gửi email thông báo cho admin"""
     try:
         # Lấy cấu hình giá
         config = price_config_crud.get_config(db, "default")
@@ -174,10 +175,49 @@ async def create_booking(
         db.commit()
         db.refresh(db_booking)
         
+        # Chuẩn bị dữ liệu cho email
+        vehicle_type_names = {
+            "4_seats": "Xe 4 chỗ",
+            "7_seats": "Xe 7 chỗ", 
+            "16_seats": "Xe 16 chỗ"
+        }
+        
+        email_data = {
+            "booking_id": db_booking.id,
+            "customer_name": db_booking.customer_name,
+            "customer_phone": db_booking.customer_phone,
+            "customer_email": db_booking.customer_email,
+            "from_address": db_booking.from_address,
+            "to_address": db_booking.to_address,
+            "distance_km": db_booking.distance_km,
+            "duration_minutes": db_booking.duration_minutes,
+            "calculated_price": db_booking.calculated_price,
+            "travel_date": db_booking.travel_date,
+            "travel_time": db_booking.travel_time,
+            "passenger_count": db_booking.passenger_count,
+            "vehicle_type_name": vehicle_type_names.get(db_booking.vehicle_type, db_booking.vehicle_type),
+            "notes": db_booking.notes
+        }
+        
+        # Gửi email thông báo cho admin (không chờ, không block)
+        email_sent = False
+        try:
+            email_sent = simple_email_service.send_new_booking_notification(email_data)
+            print(f"📧 Admin notification: {'✅ sent' if email_sent else '❌ failed'}")
+        except Exception as e:
+            print(f"📧 Admin notification error: {e}")
+        
+        # Tạo response message
+        base_message = "Đặt chuyến thành công!"
+        if email_sent:
+            notification_msg = " | 📧 Thông báo đã được gửi cho admin"
+        else:
+            notification_msg = " | ⚠️ Không thể gửi email thông báo (sẽ xử lý thủ công)"
+        
         return {
             "success": True,
             "booking_id": db_booking.id,
-            "message": "Đặt chuyến thành công!",
+            "message": base_message + notification_msg,
             "booking_info": {
                 "customer_name": db_booking.customer_name,
                 "customer_phone": db_booking.customer_phone,
@@ -192,7 +232,8 @@ async def create_booking(
                 "travel_time": db_booking.travel_time,
                 "booking_status": db_booking.booking_status
             },
-            "price_breakdown": price_info
+            "price_breakdown": price_info,
+            "email_notification": "sent" if email_sent else "failed"
         }
         
     except Exception as e:
