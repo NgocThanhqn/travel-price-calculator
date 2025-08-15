@@ -146,6 +146,12 @@ class BookingRequest(BaseModel):
     vehicle_type: str = "4_seats"  # 4_seats, 7_seats, 16_seats
     notes: Optional[str] = None
 
+    # THÊM MỚI: Giá và thông tin đã tính từ frontend
+    calculated_price: Optional[float] = None
+    distance_km: Optional[float] = None
+    duration_minutes: Optional[float] = None
+    price_breakdown: Optional[dict] = None
+
 class BookingResponse(BaseModel):
     id: int
     customer_name: str

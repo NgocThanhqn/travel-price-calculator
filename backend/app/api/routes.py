@@ -117,35 +117,58 @@ async def create_booking(
 ):
     """Tạo đặt chuyến và gửi email thông báo cho admin"""
     try:
-        # Lấy cấu hình giá
-        config = price_config_crud.get_config(db, "default")
-        if not config:
-            raise HTTPException(status_code=404, detail="Không tìm thấy cấu hình giá")
+        print(f"📝 Creating booking with frontend calculated price...")
         
-        # Tính giá theo loại xe
-        vehicle_multiplier = {
-            "4_seats": 1.0,
-            "7_seats": 1.2,
-            "16_seats": 1.5
-        }.get(booking.vehicle_type, 1.0)
+        # Kiểm tra nếu frontend đã truyền giá tính sẵn
+        if hasattr(booking, 'calculated_price') and booking.calculated_price and booking.calculated_price > 0:
+            # SỬ DỤNG GIÁ ĐÃ TÍNH TỪ FRONTEND
+            final_price = booking.calculated_price
+            distance_km = getattr(booking, 'distance_km', 0)
+            duration_minutes = getattr(booking, 'duration_minutes', 0)
+            
+            print(f"✅ Using frontend calculated price: {final_price} VND")
+            print(f"   Distance: {distance_km} km")
+            print(f"   Duration: {duration_minutes} minutes")
+        else:
+            # FALLBACK: Tính giá lại nếu frontend không truyền
+            print("⚠️ Frontend price not provided, calculating on backend...")
+            
+            # Lấy cấu hình giá
+            config = price_config_crud.get_config(db, "default")
+            if not config:
+                raise HTTPException(status_code=404, detail="Không tìm thấy cấu hình giá")
+            
+            # Tính giá theo loại xe
+            vehicle_multiplier = {
+                "4_seats": 1.0,
+                "7_seats": 1.2,
+                "16_seats": 1.5
+            }.get(booking.vehicle_type, 1.0)
+            
+            # Tạo calculator với hệ số xe
+            calculator = PriceCalculator(
+                base_price=config.base_price * vehicle_multiplier,
+                price_per_km=config.price_per_km * vehicle_multiplier,
+                min_price=config.min_price * vehicle_multiplier,
+                max_price=config.max_price * vehicle_multiplier
+            )
+            
+            # Tính toán khoảng cách và giá
+            distance_km = calculator.calculate_distance(
+                booking.from_lat, booking.from_lng,
+                booking.to_lat, booking.to_lng
+            )
+            
+            price_info = calculator.calculate_price(distance_km)
+            final_price = price_info["final_price"]
+            duration_minutes = (distance_km / 40) * 60  # 40km/h average speed
+            
+            print(f"✅ Backend calculated price: {final_price} VND")
         
-        # Tạo calculator với hệ số xe
-        calculator = PriceCalculator(
-            base_price=config.base_price * vehicle_multiplier,
-            price_per_km=config.price_per_km * vehicle_multiplier,
-            min_price=config.min_price * vehicle_multiplier,
-            max_price=config.max_price * vehicle_multiplier
-        )
         
-        # Tính toán khoảng cách và giá
-        distance = calculator.calculate_distance(
-            booking.from_lat, booking.from_lng,
-            booking.to_lat, booking.to_lng
-        )
-        
-        price_info = calculator.calculate_price(distance)
-        duration = (distance / 40) * 60  # 40km/h average speed
-        
+        print(f"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+        print(f"final_price: {final_price}")
+        print(f"distance_km: {"frontend_calculated" if hasattr(booking, 'calculated_price') and booking.calculated_price else "backend_calculated"}")
         # Tạo booking record
         booking_data = {
             "customer_name": booking.customer_name,
@@ -157,18 +180,20 @@ async def create_booking(
             "from_lng": booking.from_lng,
             "to_lat": booking.to_lat,
             "to_lng": booking.to_lng,
-            "distance_km": distance,
-            "duration_minutes": round(duration, 1),
-            "calculated_price": price_info["final_price"],
+            "distance_km": distance_km,
+            "duration_minutes": round(duration_minutes, 1),
+            "calculated_price": final_price,  # SỬ DỤNG GIÁ CHÍNH XÁC
             "travel_date": booking.travel_date,
             "travel_time": booking.travel_time,
             "passenger_count": booking.passenger_count,
             "vehicle_type": booking.vehicle_type,
             "notes": booking.notes,
             "booking_status": "pending",
-            "config_used": "default"
+            "config_used": "frontend_calculated" if hasattr(booking, 'calculated_price') and booking.calculated_price else "backend_calculated"
         }
-        
+
+        print(f"booking_data: {booking_data}")
+
         # Lưu vào database
         db_booking = models.Booking(**booking_data)
         db.add(db_booking)
@@ -232,10 +257,10 @@ async def create_booking(
                 "travel_time": db_booking.travel_time,
                 "booking_status": db_booking.booking_status
             },
-            "price_breakdown": price_info,
-            "email_notification": "sent" if email_sent else "failed"
+            "email_notification": "sent" if email_sent else "failed",
+            "price_source": "frontend_calculated" if hasattr(booking, 'calculated_price') and booking.calculated_price else "backend_calculated"
         }
-        
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Lỗi tạo đặt chuyến: {str(e)}")
 

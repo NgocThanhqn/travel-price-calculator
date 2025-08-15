@@ -415,6 +415,13 @@ const getDisplayPrice = () => {
     setBookingSuccess('');
 
     try {
+      // Lấy giá đã tính từ form (đã bao gồm vehicle multiplier)
+      const finalCalculatedPrice = getDisplayPrice();
+      
+      // Lấy thông tin distance và duration từ result
+      const distanceKm = result.data?.distance_km || result.distance_km || 0;
+      const durationMinutes = result.data?.duration_minutes || result.duration_minutes || 0;
+
       const bookingRequestData = {
         customer_name: bookingData.customer_name,
         customer_phone: bookingData.customer_phone,
@@ -429,7 +436,11 @@ const getDisplayPrice = () => {
         travel_time: bookingData.travel_time,
         passenger_count: parseInt(bookingData.passenger_count),
         vehicle_type: vehicleType,
-        notes: bookingData.notes
+        notes: bookingData.notes,
+        // QUAN TRỌNG: Truyền giá đã tính từ form
+        calculated_price: finalCalculatedPrice,
+        distance_km: distanceKm,
+        duration_minutes: durationMinutes,
       };
 
       const response = await apiService.createBooking(bookingRequestData);
@@ -858,7 +869,7 @@ const getDisplayPrice = () => {
           {/* Header */}
           <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white p-4 text-center">
             <div className="text-3xl mb-2">✅</div>
-            <h2 className="text-xl font-bold">Đặt vé thành công!</h2>
+            <h2 className="text-xl font-bold">Đặt chuyến thành công!</h2>
             <div className="bg-white bg-opacity-20 rounded-lg px-3 py-1 mt-2 inline-block">
               <span className="text-sm font-medium">Mã đặt chuyến: #{ticketInfo.booking_id}</span>
             </div>
