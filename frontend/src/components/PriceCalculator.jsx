@@ -442,6 +442,12 @@ const getDisplayPrice = () => {
         distance_km: distanceKm,
         duration_minutes: durationMinutes,
       };
+      console.log('🚗 Booking request with calculated price:', {
+        calculated_price: finalCalculatedPrice,
+        distance_km: distanceKm,
+        vehicle_type: vehicleType,
+        vehicle_multiplier: vehicleTypes[vehicleType]?.price_multiplier
+      });
 
       const response = await apiService.createBooking(bookingRequestData);
       
