@@ -1295,6 +1295,53 @@ async def get_setting(key: str, db: Session = Depends(get_db)):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Lỗi lấy setting: {str(e)}")
+        
+@router.put("/settings/{key}")
+async def update_setting_put(
+    key: str,
+    request: dict,  # {"value": "...", "description": "..."}
+    db: Session = Depends(get_db)
+):
+    """Cập nhật setting - PUT method (tương thích với frontend)"""
+    try:
+        value = request.get("value", "")
+        description = request.get("description", "")
+        
+        # Tìm setting hiện tại
+        setting = db.query(models.Settings).filter(models.Settings.key == key).first()
+        
+        if setting:
+            # Update existing
+            setting.value = value
+            if description:
+                setting.description = description
+            setting.updated_at = datetime.now()
+        else:
+            # Create new
+            setting = models.Settings(
+                key=key,
+                value=value,
+                description=description,
+                updated_at=datetime.now()
+            )
+            db.add(setting)
+        
+        db.commit()
+        db.refresh(setting)
+        
+        return {
+            "message": "Cập nhật setting thành công", 
+            "setting": {
+                "key": setting.key,
+                "value": setting.value,
+                "description": setting.description,
+                "updated_at": setting.updated_at.isoformat() if setting.updated_at else None
+            }
+        }
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Lỗi cập nhật setting: {str(e)}")
+
 
 @router.post("/settings")
 async def update_setting(
