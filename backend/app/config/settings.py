@@ -3,7 +3,7 @@ from pydantic import BaseSettings
 
 class Settings(BaseSettings):
     # Cấu hình database
-    DATABASE_URL: str = "sqlite:///../../database/travel_calculator.db"
+    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///../../database/travel_calculator.db")
     
     # Cấu hình Google Maps
     GOOGLE_MAPS_API_KEY: str = "YOUR_API_KEY_HERE"
