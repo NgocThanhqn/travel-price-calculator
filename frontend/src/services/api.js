@@ -103,7 +103,12 @@
 
 import axios from 'axios';
 
-const API_BASE_URL = 'http://127.0.0.1:8000';
+// Lấy API URL từ environment hoặc dùng relative URL
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+
+console.log('🔧 Environment:', import.meta.env.VITE_ENVIRONMENT );
+console.log('🌐 API Base URL:', API_BASE_URL || 'Same origin (relative)');
+//const API_BASE_URL = 'http://127.0.0.1:8000';
 
 // Tạo axios instance
 const api = axios.create({
