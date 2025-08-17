@@ -5,3 +5,35 @@ __pycache__/
 .DS_Store
 dist/
 build/
+# Environment files
+.env
+.env.local
+.env.production
+.env.development
+
+# Keep template
+!.env.example
+
+# Frontend env
+frontend/.env.local
+frontend/.env.production
+
+# Database
+database/
+*.db
+*.sqlite
+*.sqlite3
+
+# Dependencies
+node_modules/
+backend/venv/
+__pycache__/
+*.pyc
+
+# Build
+frontend/dist/
+frontend/build/
+
+# Logs
+*.log
+logs/
