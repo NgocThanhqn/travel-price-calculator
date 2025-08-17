@@ -5,23 +5,19 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import os
 
-# Import settings để dùng cấu hình thống nhất
-try:
-    from app.config.settings import settings
-    DATABASE_URL = settings.DATABASE_URL
-    DATABASE_PATH = DATABASE_URL.replace("sqlite:///", "")
-    print(f"✅ Using DATABASE_URL from settings: {DATABASE_URL}")
-except ImportError:
-    # Fallback nếu không import được settings
-    BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    DATABASE_DIR = os.path.join(BASE_DIR, "database")
-    DATABASE_PATH = os.path.join(DATABASE_DIR, "travel_calculator.db")
-    DATABASE_URL = f"sqlite:///{DATABASE_PATH}"
-    print(f"⚠️ Using fallback DATABASE_URL: {DATABASE_URL}")
-
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+DATABASE_DIR = os.path.join(BASE_DIR, "database")
+DATABASE_PATH = os.path.join(DATABASE_DIR, "travel_calculator.db")
+# Đường dẫn database URL
+DATABASE_URL = f"sqlite:///{os.path.join(DATABASE_DIR, 'travel_calculator.db')}"
 # Tạo thư mục database nếu chưa tồn tại
-DATABASE_DIR = os.path.dirname(DATABASE_PATH)
 os.makedirs(DATABASE_DIR, exist_ok=True)
+
+# Đường dẫn database URL
+DATABASE_URL = f"sqlite:///{DATABASE_PATH}"
+
+print(f"Database path: {DATABASE_PATH}")  # Debug để xem đường dẫn
+
 
 # Tạo engine
 engine = create_engine(
