@@ -1,7 +1,6 @@
 import os
-from pydantic import BaseSettings
 
-class Settings(BaseSettings):
+class Settings:
     # Cấu hình database
     DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///../../database/travel_calculator.db")
     
