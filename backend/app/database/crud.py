@@ -20,14 +20,40 @@ class PriceConfigCRUD:
         db.refresh(db_config)
         return db_config
     
+    # def update_config(self, db: Session, config_name: str, config_update: schemas.PriceConfigUpdate) -> Optional[models.PriceConfig]:
+    #     db_config = self.get_config(db, config_name)
+    #     if db_config:
+    #         update_data = config_update.dict(exclude_unset=True)
+    #         for field, value in update_data.items():
+    #             setattr(db_config, field, value)
+    #         db.commit()
+    #         db.refresh(db_config)
+    #     return db_config
     def update_config(self, db: Session, config_name: str, config_update: schemas.PriceConfigUpdate) -> Optional[models.PriceConfig]:
+        """Cập nhật cấu hình giá - Tạo mới nếu chưa tồn tại"""
         db_config = self.get_config(db, config_name)
-        if db_config:
+        
+        if not db_config:
+            # Tạo mới nếu chưa tồn tại
+            print(f"🏗️ Creating new config '{config_name}'...")
+            create_data = config_update.dict(exclude_unset=True)
+            create_data['config_name'] = config_name
+            
+            # Set default values nếu không có
+            if 'is_active' not in create_data:
+                create_data['is_active'] = True
+            
+            db_config = models.PriceConfig(**create_data)
+            db.add(db_config)
+        else:
+            # Cập nhật nếu đã tồn tại
+            print(f"📝 Updating existing config '{config_name}'...")
             update_data = config_update.dict(exclude_unset=True)
             for field, value in update_data.items():
                 setattr(db_config, field, value)
-            db.commit()
-            db.refresh(db_config)
+    
+        db.commit()
+        db.refresh(db_config)
         return db_config
 
 # CRUD cho Trip
