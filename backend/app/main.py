@@ -18,8 +18,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:3000", # React app URL
-        "http://your-domain.com",       # Production domain
-        "https://your-domain.com",      # Production domain với SSL
+        "http://datxeviet.com",    # Production domain
+        "https://datxeviet.com",       # Production domain
         "http://103.188.83.186"          # Production IP
     ],  
     allow_credentials=True,
