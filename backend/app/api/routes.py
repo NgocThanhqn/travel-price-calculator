@@ -786,14 +786,14 @@ async def calculate_price_enhanced(
             config_data = price_config_crud.get_config(db, "default")
             if not config_data:
                 raise HTTPException(status_code=404, detail="Không tìm thấy cấu hình giá default")
-            # config_data = {
-            #     "base_price": 10000,
-            #     "price_per_km": 5000,
-            #     "min_price": 20000,
-            #     "max_price": 500000
-            # }
-            # config_type = "simple"
-            # config_name = "default"
+            config_data = {
+                "base_price": config_data.base_price,
+                "price_per_km": config_data.price_per_km,
+                "min_price": config_data.min_price,
+                "max_price": config_data.max_price
+            }
+            config_type = "simple"
+            config_name = "default"
         
         # QUAN TRỌNG: Tính khoảng cách nếu chưa có
         distance_km = request.distance_km
