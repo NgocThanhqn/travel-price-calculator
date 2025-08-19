@@ -37,3 +37,4 @@ frontend/build/
 # Logs
 *.log
 logs/
+backend/database/travel_calculator.db
