@@ -19,8 +19,8 @@ frontend/.env.local
 frontend/.env.production
 
 # Database
-database/
-*.db
+# database/
+# *.db
 *.sqlite
 *.sqlite3
 

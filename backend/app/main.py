@@ -10,7 +10,9 @@ from app.api.tier_routes import router as tier_router
 app = FastAPI(
     title="Travel Price Calculator API",
     description="API để tính giá tiền di chuyển theo khoảng cách",
-    version="1.0.0"
+    version="1.0.0",
+    docs_url="/docs",      # Swagger UI
+    openapi_url="/openapi.json"
 )
 
 # Cấu hình CORS để frontend có thể gọi API
