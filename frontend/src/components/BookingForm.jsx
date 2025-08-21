@@ -112,7 +112,7 @@ const BookingForm = ({ selectedLocations, priceResult, onBookingSuccess }) => {
   const finalPrice = calculatePriceWithVehicle();
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-lg border">
+    <div className="bg-white p-6 rounded-lg shadow-lg border form-compact">
       <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">
         📋 Thông tin đặt chuyến
       </h2>

@@ -67,11 +67,11 @@ const TravelWebsite = () => {
               <div className="flex items-center space-x-4 md:space-x-6">
                 <div className="flex items-center space-x-2">
                   <i className="fas fa-phone-alt text-yellow-300"></i>
-                  <span className="font-semibold text-sm md:text-base">Hotline: 0123-456-789</span>
+                  <span className="font-semibold text-sm md:text-base">Hotline: 0985323531</span>
                 </div>
                 <div className="hidden md:flex items-center space-x-2">
                   <i className="fas fa-envelope text-yellow-300"></i>
-                  <span className="text-sm md:text-base">info@tanutrave.com</span>
+                  <span className="text-sm md:text-base">Haohuynh20072007@gmail.com</span>
                 </div>
               </div>
               <div className="flex items-center space-x-3 md:space-x-4">
@@ -306,11 +306,11 @@ const TravelWebsite = () => {
                 <div className="space-y-3">
                   <div className="flex items-center space-x-3 justify-center md:justify-start">
                     <i className="fas fa-phone-alt text-yellow-400 text-sm"></i>
-                    <span className="text-gray-400 text-sm md:text-base">0123-456-789</span>
+                    <span className="text-gray-400 text-sm md:text-base">0985323531</span>
                   </div>
                   <div className="flex items-center space-x-3 justify-center md:justify-start">
                     <i className="fas fa-envelope text-yellow-400 text-sm"></i>
-                    <span className="text-gray-400 text-sm md:text-base">info@tanutrave.com</span>
+                    <span className="text-gray-400 text-sm md:text-base">Haohuynh20072007@gmail.com</span>
                   </div>
                   <div className="flex items-start space-x-3 justify-center md:justify-start text-center md:text-left">
                     <i className="fas fa-map-marker-alt text-yellow-400 mt-1 text-sm"></i>

@@ -24,11 +24,11 @@ const TravelWebsite = () => {
                 <div className="flex flex-col md:flex-row items-center space-y-1 md:space-y-0 md:space-x-6">
                   <div className="flex items-center space-x-2">
                     <i className="fas fa-phone-alt text-yellow-300"></i>
-                    <span className="text-xs md:text-sm md:text-base">Hotline: 0123-456-789</span>
+                    <span className="text-xs md:text-sm md:text-base">Hotline: 0985323531</span>
                   </div>
                   <div className="hidden md:flex items-center space-x-2">
                     <i className="fas fa-envelope text-yellow-300"></i>
-                    <span className="text-sm md:text-base">info@tanutrave.com</span>
+                    <span className="text-sm md:text-base">Haohuynh20072007@gmail.com</span>
                   </div>
                 </div>
                 <div className="flex items-center space-x-3 md:space-x-4">
@@ -285,7 +285,7 @@ const TravelWebsite = () => {
                   </p>
                   <div className="flex flex-col sm:flex-row gap-4 justify-center px-4">
                     <a href="#" className="bg-yellow-400 text-blue-900 px-6 md:px-8 py-3 md:py-4 rounded-lg font-semibold text-sm md:text-base hover:bg-yellow-300 transition-colors">
-                      📞 Gọi ngay: 0123-456-789
+                      📞 Gọi ngay: 0985323531
                     </a>
                     <a href="#" className="border-2 border-white text-white px-6 md:px-8 py-3 md:py-4 rounded-lg font-semibold text-sm md:text-base hover:bg-white hover:text-blue-600 transition-colors">
                       💬 Chat với chúng tôi
@@ -356,11 +356,11 @@ const TravelWebsite = () => {
                 <div className="space-y-3">
                   <div className="flex items-center space-x-3 justify-center md:justify-start">
                     <i className="fas fa-phone-alt text-yellow-400 text-sm"></i>
-                    <span className="text-gray-400 text-sm md:text-base">0123-456-789</span>
+                    <span className="text-gray-400 text-sm md:text-base">0985323531</span>
                   </div>
                   <div className="flex items-center space-x-3 justify-center md:justify-start">
                     <i className="fas fa-envelope text-yellow-400 text-sm"></i>
-                    <span className="text-gray-400 text-sm md:text-base">info@tanutrave.com</span>
+                    <span className="text-gray-400 text-sm md:text-base">Haohuynh20072007@gmail.com</span>
                   </div>
                   <div className="flex items-start space-x-3 justify-center md:justify-start text-center md:text-left">
                     <i className="fas fa-map-marker-alt text-yellow-400 mt-1 text-sm"></i>

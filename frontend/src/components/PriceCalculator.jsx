@@ -600,7 +600,7 @@ const getDisplayPrice = () => {
   const adjustedResult = getAdjustedPrice();
 
   return (
-    <div ref={formRef} className="max-w-6xl mx-auto p-6 bg-white shadow-lg rounded-lg">
+    <div ref={formRef} className="max-w-6xl mx-auto p-6 bg-white shadow-lg rounded-lg form-compact">
       <h1 className="text-3xl font-bold text-center mb-8 text-gray-800">
         Tính Giá Chuyến Đi
       </h1>
@@ -871,7 +871,7 @@ const getDisplayPrice = () => {
       )}
 
       {bookingSuccess && ticketInfo && (
-        <div className="mb-6 mx-4 bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-xl shadow-lg overflow-hidden">
+        <div className="mb-6 mx-4 bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-xl shadow-lg overflow-hidden form-compact">
           {/* Header */}
           <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white p-4 text-center">
             <div className="text-3xl mb-2">✅</div>
@@ -1033,7 +1033,7 @@ const getDisplayPrice = () => {
 
       {/* Booking Form */}
       {showBookingForm && result && !bookingSuccess && (
-        <div className="bg-gradient-to-br from-blue-50 to-indigo-100 border border-blue-200 rounded-lg p-6 shadow-lg">
+        <div className="bg-gradient-to-br from-blue-50 to-indigo-100 border border-blue-200 rounded-lg p-6 shadow-lg form-compact">
           <h2 className="text-xl font-bold text-blue-800 mb-4">📞 Đặt chuyến ngay</h2>
           {/*{bookingSuccess && (
             <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">

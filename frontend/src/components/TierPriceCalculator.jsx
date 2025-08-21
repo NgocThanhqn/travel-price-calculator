@@ -47,7 +47,7 @@ const TierPriceCalculator = ({ distance, onPriceCalculated }) => {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6">
+    <div className="bg-white rounded-lg shadow-lg p-6 form-compact">
       <h3 className="text-lg font-semibold mb-4">💰 Tính giá theo bậc quãng đường</h3>
       
       {/* Chọn cấu hình giá */}
