@@ -26,6 +26,8 @@ class SimpleEmailService:
         self.password = os.getenv('SMTP_PASSWORD')
         self.from_email = os.getenv('FROM_EMAIL', self.username)
         self.admin_email = os.getenv('ADMIN_EMAIL')
+        # Hiển thị tên người gửi
+        self.display_name = os.getenv('FROM_DISPLAY_NAME', 'Đặt xe Việt')
         self.company_name = os.getenv('COMPANY_NAME', 'Taxi Service')
         
         if not self.username or not self.password:
@@ -128,7 +130,7 @@ class SimpleEmailService:
             # Tạo và gửi email
             message = MIMEMultipart("alternative")
             message["Subject"] = subject
-            message["From"] = self.from_email
+            message["From"] = f"{self.display_name} <{self.from_email}>" if self.from_email else self.display_name
             message["To"] = self.admin_email
             
             html_part = MIMEText(html_content, "html", "utf-8")
@@ -172,7 +174,7 @@ class SimpleEmailService:
             
             message = MIMEMultipart()
             message["Subject"] = subject
-            message["From"] = self.from_email
+            message["From"] = f"{self.display_name} <{self.from_email}>" if self.from_email else self.display_name
             message["To"] = test_email
             message.attach(MIMEText(content, "html", "utf-8"))
             

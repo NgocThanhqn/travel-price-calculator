@@ -15,3 +15,69 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+/* Compact form utilities to reduce visual footprint and improve mobile ergonomics */
+@layer components {
+  .form-compact input,
+  .form-compact select,
+  .form-compact textarea {
+    @apply p-2 text-sm rounded-lg;
+  }
+
+  .form-compact label {
+    @apply text-sm;
+  }
+
+  /* Shrink most action buttons in forms */
+  .form-compact button {
+    @apply px-4 py-2 text-sm;
+  }
+
+  /* Reduce overall spacing in grid layouts inside forms */
+  .form-compact .grid {
+    gap: 1rem; /* overrides gap-6 etc. */
+  }
+
+  /* Normalize padding for common sections/cards if used inside forms */
+  .form-compact .card,
+  .form-compact .section,
+  .form-compact .panel {
+    @apply p-4;
+  }
+
+  }
+
+/* Ensure compact rules override inline utility padding in markup */
+@layer utilities {
+  .form-compact input,
+  .form-compact select,
+  .form-compact textarea {
+    padding: 0.5rem !important; /* p-2 */
+    font-size: 0.875rem !important; /* text-sm */
+    border-radius: 0.5rem; /* rounded-lg */
+  }
+
+  .form-compact label {
+    font-size: 0.875rem !important; /* text-sm */
+  }
+
+  .form-compact button {
+    padding: 0.5rem 1rem !important; /* py-2 px-4 */
+    font-size: 0.875rem !important; /* text-sm */
+  }
+
+  .form-compact .grid {
+    gap: 1rem !important; /* reduce large gaps on mobile */
+  }
+
+  .form-compact .card,
+  .form-compact .section,
+  .form-compact .panel {
+    padding: 1rem !important; /* p-4 */
+  }
+
+  /* Downscale headings inside compact forms for better fit on mobile */
+  .form-compact .text-2xl { font-size: 1.25rem !important; }
+  .form-compact .text-xl  { font-size: 1.125rem !important; }
+  .form-compact .text-lg  { font-size: 1rem !important; }
+}
