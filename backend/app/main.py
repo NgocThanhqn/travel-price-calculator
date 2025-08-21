@@ -17,10 +17,13 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:3000", # React app URL
-        "http://datxeviet.com",    # Production domain
-        "https://datxeviet.com",       # Production domain
-        "http://103.188.83.186"          # Production IP
+        "http://localhost:3000",      # Development
+        "http://127.0.0.1:3000",
+        "http://datxeviet.com",       # Production domain
+        "https://datxeviet.com",      # HTTPS (sau khi có SSL)
+        "http://www.datxeviet.com",
+        "https://www.datxeviet.com",
+        "http://103.188.83.186",  
     ],  
     allow_credentials=True,
     allow_methods=["*"],
