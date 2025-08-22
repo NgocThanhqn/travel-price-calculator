@@ -1,12 +1,10 @@
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import PriceCalculator from './PriceCalculator';
-import TierPriceCalculator from './TierPriceCalculator';
 import AdminPage from '../pages/AdminPage';
 
 const TravelWebsite = () => {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
-  const [pricingMode, setPricingMode] = useState('tier'); // 'simple' hoặc 'tier'
 
   const toggleMobileMenu = () => {
     setShowMobileMenu(!showMobileMenu);
@@ -216,12 +214,8 @@ const TravelWebsite = () => {
                     </div>
                   </div>
 
-                  {/* Render pricing calculator based on mode */}
-                  {pricingMode === 'tier' ? (
-                    <TierPriceCalculator />
-                  ) : (
-                    <PriceCalculator />
-                  )}
+                  {/* Render pricing calculator*/}
+                  <PriceCalculator />
                   
                   {/* Comparison info */}
                   <div className="mt-6 pt-6 border-t border-gray-200">
