@@ -14,7 +14,7 @@ DATABASE_URL = f"sqlite:///{os.path.join(DATABASE_DIR, 'travel_calculator.db')}"
 os.makedirs(DATABASE_DIR, exist_ok=True)
 
 # Đường dẫn database URL
-DATABASE_URL = f"sqlite:///{DATABASE_PATH}"
+DATABASE_URL = "sqlite:///D:/Working/database/travel_calculator.db"
 
 print(f"Database path: {DATABASE_PATH}")  # Debug để xem đường dẫn
 

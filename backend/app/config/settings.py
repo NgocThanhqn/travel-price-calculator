@@ -3,7 +3,7 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     # Cấu hình database
-    DATABASE_URL: str = "sqlite:///../../database/travel_calculator.db"
+    DATABASE_URL: str = "sqlite:///D:/Working/database/travel_calculator.db"
     #DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///../../database/travel_calculator.db")
     
     # Cấu hình Google Maps
