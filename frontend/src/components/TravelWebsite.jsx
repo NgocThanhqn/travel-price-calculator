@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import PriceCalculator from './PriceCalculator';
 import AdminPage from '../pages/AdminPage';
+import ContactButtons from './ContactButtons';
 
 const TravelWebsite = () => {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
@@ -383,6 +384,8 @@ const TravelWebsite = () => {
             </div>
           </div>
         </footer>
+
+        <ContactButtons />
       </div>
     </Router>
   );

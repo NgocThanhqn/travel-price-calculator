@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import PriceCalculator from './components/PriceCalculator';
 import AdminPage from './pages/AdminPage';
+import ContactButtons from './components/ContactButtons';
 
 // function App() {
 //   return (
@@ -339,6 +340,7 @@ const TravelWebsite = () => {
             </div>
           </div>
         </footer>
+        <ContactButtons />
       </div>
     </Router>
   );
