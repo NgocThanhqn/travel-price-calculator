@@ -49,7 +49,7 @@ const TravelWebsite = () => {
                   </div>
                   <div className="flex items-center space-x-2">
                     <i className="fas fa-envelope text-yellow-300"></i>
-                    <span>oanhngoc198324@gmail.com</span>
+                    <span>haohuynh2007.2007@gmail.com</span>
                   </div>
                 </div>
                 <div className="flex items-center space-x-4">
@@ -205,7 +205,7 @@ const TravelWebsite = () => {
                   </div>
                   <div className="flex items-center space-x-2 justify-center md:justify-start">
                     <i className="fas fa-envelope text-yellow-400"></i>
-                    <span className="text-sm">oanhngoc198324@gmail.com</span>
+                    <span className="text-sm">haohuynh2007.2007@gmail.com</span>
                   </div>
                 </div>
               </div>
