@@ -141,8 +141,8 @@ async def create_booking(
             # Tính giá theo loại xe
             vehicle_multiplier = {
                 "4_seats": 1.0,
-                "7_seats": 1.1,
-                "16_seats": 1.2
+                "7_seats": 1.17,
+                "16_seats": 1.65
             }.get(booking.vehicle_type, 1.0)
             
             # Tạo calculator với hệ số xe
@@ -302,13 +302,13 @@ async def get_vehicle_types():
         "7_seats": {
             "name": "Xe 7 chỗ", 
             "description": "Phù hợp cho 4-6 khách",
-            "price_multiplier": 1.1,
+            "price_multiplier": 1.17,
             "max_passengers": 7
         },
         "16_seats": {
             "name": "Xe 16 chỗ",
             "description": "Phù hợp cho 7-15 khách", 
-            "price_multiplier": 1.2,
+            "price_multiplier": 1.65,
             "max_passengers": 16
         }
     }
