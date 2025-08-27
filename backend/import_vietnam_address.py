@@ -182,7 +182,8 @@ def main():
         sys.exit(1)
     
     json_file = sys.argv[1]
-    db_path = 'database/travel_calculator.db'
+    db_path = '/var/www/travel-booking/database/travel_calculator.db'
+    #db_path = 'database/travel_calculator.db'
     
     # Kiểm tra file JSON
     if not os.path.exists(json_file):
