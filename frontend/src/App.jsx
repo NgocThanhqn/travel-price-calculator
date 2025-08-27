@@ -21,16 +21,21 @@ const TravelWebsite = () => {
             <div className="md:hidden py-3">
               <div className="flex items-center justify-between">
                 {/* Logo compact */}
-                <div className="flex items-center space-x-2">
-                  <div className="w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center">
-                    <i className="fas fa-map-marked-alt text-sm text-blue-900"></i>
+                <div className="flex flex-col">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center">
+                      <i className="fas fa-map-marked-alt text-sm text-blue-900"></i>
+                    </div>
+                    <Link to="/" className="text-lg font-bold hover:text-yellow-300">
+                      Du Lịch Huỳnh Vũ
+                    </Link>
                   </div>
-                  <Link to="/" className="text-lg font-bold hover:text-yellow-300">
-                    TanuTravel
-                  </Link>
+                  <div className="text-xs text-blue-100 ml-10">
+                    datxeviet.com
+                  </div>
                 </div>
                 
-                {/* Hotline prominently displayed */}
+                {/* Hotline */}
                 <div className="flex items-center space-x-2 bg-yellow-400 text-blue-900 px-3 py-1 rounded-full">
                   <i className="fas fa-phone-alt text-sm"></i>
                   <span className="font-bold text-sm">0985323531</span>
@@ -74,21 +79,22 @@ const TravelWebsite = () => {
                     </div>
                     <div>
                       <Link to="/" className="block">
-                        <h1 className="text-2xl font-bold hover:text-yellow-300 transition-colors">TanuTravel</h1>
-                        <p className="text-blue-100 text-sm">Khám phá Việt Nam cùng chúng tôi</p>
+                        <h1 className="text-2xl font-bold hover:text-yellow-300 transition-colors">Du Lịch Huỳnh Vũ</h1>
+                        <p className="text-blue-100 text-sm">Dịch vụ đặt xe - Tính giá chuyến đi</p>
+                        <p className="text-blue-200 text-xs mt-1">datxeviet.com</p>
                       </Link>
                     </div>
                   </div>
                   
                   <nav className="flex space-x-8">
                     <Link to="/" className="hover:text-yellow-300 transition-colors font-medium">
-                      🏠 Trang chủ
+                      Trang chủ
                     </Link>
                     <a href="#" className="hover:text-yellow-300 transition-colors font-medium">
-                      📞 Liên hệ
+                      Liên hệ
                     </a>
                     <a href="#" className="hover:text-yellow-300 transition-colors font-medium">
-                      ℹ️ Giới thiệu
+                      Giới thiệu
                     </a>
                   </nav>
                 </div>
@@ -109,24 +115,57 @@ const TravelWebsite = () => {
                   backgroundSize: 'cover',
                   backgroundPosition: 'center'
                 }}>
-                <div className="text-center text-white z-10">
-                  <h1 className="text-5xl font-bold mb-6">Khám Phá Việt Nam</h1>
-                  <p className="text-xl mb-8">Trải nghiệm du lịch tuyệt vời với dịch vụ chất lượng</p>
-                  <div className="flex justify-center space-x-4">
-                    <button className="bg-yellow-400 text-blue-900 px-8 py-3 rounded-lg font-bold hover:bg-yellow-300 transition-colors">
-                      🗺️ Tính Giá Ngay
-                    </button>
-                    <button className="border-2 border-white text-white px-8 py-3 rounded-lg font-bold hover:bg-white hover:text-blue-900 transition-colors">
-                      📞 Liên Hệ
-                    </button>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="text-center text-white z-10">
+                    <h1 className="text-5xl font-bold mb-6">Khám Phá Việt Nam</h1>
+                    <p className="text-xl mb-4">Trải nghiệm du lịch tuyệt vời với dịch vụ chất lượng</p>
+                    <p className="text-lg mb-8 text-yellow-300 font-semibold">datxeviet.com</p>
+                    <div className="flex justify-center space-x-4">
+                      <button 
+                        onClick={() => {
+                          const formElement = document.querySelector('.form-compact');
+                          if (formElement) {
+                            formElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                          }
+                        }}
+                        className="bg-yellow-400 text-blue-900 px-8 py-3 rounded-lg font-bold hover:bg-yellow-300 transition-colors"
+                      >
+                        Tính Giá Ngay
+                      </button>
+                      <button className="border-2 border-white text-white px-8 py-3 rounded-lg font-bold hover:bg-white hover:text-blue-900 transition-colors">
+                        Liên Hệ
+                      </button>
+                    </div>
                   </div>
                 </div>
               </section>
 
               {/* Price Calculator Section */}
-              <section className="py-4 md:py-12">
-                <div className="container mx-auto px-2 md:px-4">
-                  <PriceCalculator />
+              <section className="py-4 md:py-12 relative">
+                {/* Desktop background - darker overlay */}
+                <div className="hidden md:block absolute inset-0 z-0"
+                  style={{
+                    backgroundImage: `linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.4)), url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80')`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    backgroundAttachment: 'fixed'
+                  }}>
+                </div>
+                
+                {/* Mobile background - subtle gradient */}
+                <div className="md:hidden absolute inset-0 z-0 bg-gradient-to-br from-gray-100 to-gray-200">
+                </div>
+                
+                <div className="container mx-auto px-2 md:px-4 relative z-10">
+                  {/* Desktop: Two column layout */}
+                  <div className="hidden md:block">
+                    <PriceCalculator />
+                  </div>
+                  
+                  {/* Mobile: Full width */}
+                  <div className="md:hidden">
+                    <PriceCalculator />
+                  </div>
                 </div>
               </section>
 
@@ -134,8 +173,8 @@ const TravelWebsite = () => {
               <section className="hidden md:block py-20 bg-white">
                 <div className="container mx-auto px-4">
                   <div className="text-center mb-16">
-                    <h2 className="text-4xl font-bold text-gray-800 mb-4">Tại Sao Chọn TanuTravel?</h2>
-                    <p className="text-xl text-gray-600">Chúng tôi mang đến trải nghiệm du lịch tốt nhất</p>
+                    <h2 className="text-4xl font-bold text-gray-800 mb-4">Tại Sao Chọn Du Lịch Huỳnh Vũ?</h2>
+                    <p className="text-xl text-gray-600">Dịch vụ đặt xe uy tín - Tính giá minh bạch</p>
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -178,9 +217,9 @@ const TravelWebsite = () => {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 md:gap-8">
               {/* Company info */}
               <div className="text-center md:text-left">
-                <h5 className="font-bold mb-3 text-lg">TanuTravel</h5>
+                <h5 className="font-bold mb-3 text-lg">Du Lịch Huỳnh Vũ</h5>
                 <p className="text-gray-400 text-sm mb-3">
-                  Khám phá Việt Nam cùng chúng tôi
+                  Dịch vụ đặt xe - Tính giá chuyến đi
                 </p>
                 <div className="flex space-x-4 justify-center md:justify-start">
                   <a href="#" className="text-gray-400 hover:text-yellow-400 transition-colors">
@@ -236,7 +275,7 @@ const TravelWebsite = () => {
             {/* Copyright */}
             <div className="border-t border-gray-700 mt-6 md:mt-8 pt-4 md:pt-6 text-center">
               <p className="text-gray-400 text-sm">
-                © 2025 TanuTravel. Tất cả quyền được bảo lưu.
+                © 2025 Du Lịch Huỳnh Vũ. Tất cả quyền được bảo lưu.
               </p>
             </div>
           </div>
