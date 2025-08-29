@@ -6,8 +6,8 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 app_dir = os.path.join(current_dir, 'app')
 sys.path.insert(0, app_dir)
 
-from database.database import engine, create_tables, DATABASE_PATH
-from models.models import Base, Booking, Customer, Settings, PriceConfig
+from app.database.database import engine, create_tables, DATABASE_PATH
+from app.models.models import Base, Booking, Customer, Settings, PriceConfig
 from sqlalchemy.orm import sessionmaker
 
 def update_database():

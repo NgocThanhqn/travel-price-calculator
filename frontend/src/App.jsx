@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import PriceCalculator from './components/PriceCalculator';
 import AdminPage from './pages/AdminPage';
 import ContactButtons from './components/ContactButtons';
+import { AddressProvider } from './context/AddressContext';
 
 const TravelWebsite = () => {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
@@ -12,8 +13,9 @@ const TravelWebsite = () => {
   };
 
   return (
-    <Router>
-      <div className="min-h-screen bg-gray-50">
+    <AddressProvider>
+      <Router>
+        <div className="min-h-screen bg-gray-50">
         {/* Header - Tối ưu cho mobile */}
         <header className="bg-gradient-to-r from-blue-600 via-purple-600 to-blue-800 text-white shadow-lg">
           <div className="container mx-auto px-2 md:px-4">
@@ -157,15 +159,7 @@ const TravelWebsite = () => {
                 </div>
                 
                 <div className="container mx-auto px-2 md:px-4 relative z-10">
-                  {/* Desktop: Two column layout */}
-                  <div className="hidden md:block">
-                    <PriceCalculator />
-                  </div>
-                  
-                  {/* Mobile: Full width */}
-                  <div className="md:hidden">
-                    <PriceCalculator />
-                  </div>
+                  <PriceCalculator />
                 </div>
               </section>
 
@@ -282,8 +276,9 @@ const TravelWebsite = () => {
         </footer>
 
         <ContactButtons />
-      </div>
-    </Router>
+        </div>
+      </Router>
+    </AddressProvider>
   );
 };
 

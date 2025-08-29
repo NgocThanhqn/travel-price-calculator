@@ -241,10 +241,15 @@ export const testTierAPI = async () => {
 // Lấy cấu hình đang active
 export const getActiveConfig = () => api.get('/api/active-config');
 // Set cấu hình active
-export const setActiveConfig = (configType, configName) => 
-  api.post('/api/set-active-config', null, {
-    params: { config_type: configType, config_name: configName }
+export const setActiveConfig = (type, configName, useFixedPrice = false) => {
+  return api.post('/api/set-active-config', null, {
+    params: { 
+      config_type: type, 
+      config_name: configName,
+      use_fixed_price: useFixedPrice
+    }
   });
+}
 // Test active config
 export const testActiveConfig = (distanceKm) => 
   api.get('/api/test-active-config', {
@@ -264,7 +269,15 @@ export const apiService = {
 
   // Active config management
   getActiveConfig,
-  setActiveConfig,
+  setActiveConfig: (type, configName, useFixedPrice = false) => {
+    return api.post('/api/set-active-config', null, {
+      params: { 
+        config_type: type, 
+        config_name: configName,
+        use_fixed_price: useFixedPrice
+      }
+    });
+  },
   testActiveConfig,
   
   // Basic
@@ -296,6 +309,32 @@ export const apiService = {
   getSettings,
   getSetting,
   updateSetting,
+
+  // Fixed price routes
+  getFixedPriceRoutes: (params = {}) => api.get('/api/fixed-price-routes', { params }),
+  getFixedPriceRoute: (id) => api.get(`/api/fixed-price-routes/${id}`),
+  createFixedPriceRoute: (data) => api.post('/api/fixed-price-routes', data),
+  updateFixedPriceRoute: (id, data) => api.put(`/api/fixed-price-routes/${id}`, data),
+  deleteFixedPriceRoute: (id) => api.delete(`/api/fixed-price-routes/${id}`),
+  checkFixedPrice: (params) => api.post('/api/check-fixed-price', null, { params }),
+  checkFixedPriceByText: (fromAddress, toAddress) => 
+    api.post('/api/check-fixed-price-by-text', null, { 
+      params: { from_address: fromAddress, to_address: toAddress } 
+    }),
+
+  // Address management
+  getProvinces: () => api.get('/api/address/provinces'),
+  getDistricts: (provinceCode) => api.get(`/api/address/districts/${provinceCode}`),
+  getWards: (districtCode) => api.get(`/api/address/wards/${districtCode}`),
+  searchAddress: (params) => api.get('/api/address/search', { params }),
+  getFullAddress: (params) => api.get('/api/address/full-address', { params }),
+  getAddressStats: () => api.get('/api/address/stats'),
+
+  // Generic methods for backward compatibility
+  get: (url, config) => api.get(url, config),
+  post: (url, data, config) => api.post(url, data, config),
+  put: (url, data, config) => api.put(url, data, config),
+  delete: (url, config) => api.delete(url, config),
 };
 
 // Export default

@@ -21,15 +21,16 @@ async def test_address(db: Session = Depends(get_db)):
 async def get_provinces(db: Session = Depends(get_db)):
     """Lấy danh sách tỉnh/thành phố"""
     try:
-        query = text("SELECT code, name, full_name FROM provinces ORDER BY name")
+        query = text("SELECT id, code, name, full_name FROM provinces ORDER BY name")
         result = db.execute(query).fetchall()
         
         provinces = []
         for row in result:
             provinces.append({
-                "code": row[0],
-                "name": row[1], 
-                "full_name": row[2] or row[1]
+                "id": row[0],
+                "code": row[1],
+                "name": row[2], 
+                "full_name": row[3] or row[2]
             })
         
         return {"provinces": provinces}
@@ -41,7 +42,7 @@ async def get_districts(province_code: str, db: Session = Depends(get_db)):
     """Lấy danh sách quận/huyện theo mã tỉnh"""
     try:
         query = text("""
-            SELECT code, name, full_name 
+            SELECT id, code, name, full_name 
             FROM districts 
             WHERE province_code = :province_code 
             ORDER BY name
@@ -51,9 +52,10 @@ async def get_districts(province_code: str, db: Session = Depends(get_db)):
         districts = []
         for row in result:
             districts.append({
-                "code": row[0],
-                "name": row[1],
-                "full_name": row[2] or row[1]
+                "id": row[0],
+                "code": row[1],
+                "name": row[2],
+                "full_name": row[3] or row[2]
             })
         
         return {"districts": districts}
@@ -65,7 +67,7 @@ async def get_wards(district_code: str, db: Session = Depends(get_db)):
     """Lấy danh sách phường/xã theo mã quận/huyện"""
     try:
         query = text("""
-            SELECT code, name, full_name 
+            SELECT id, code, name, full_name 
             FROM wards 
             WHERE district_code = :district_code 
             ORDER BY name
@@ -75,9 +77,10 @@ async def get_wards(district_code: str, db: Session = Depends(get_db)):
         wards = []
         for row in result:
             wards.append({
-                "code": row[0],
-                "name": row[1],
-                "full_name": row[2] or row[1]
+                "id": row[0],
+                "code": row[1],
+                "name": row[2],
+                "full_name": row[3] or row[2]
             })
         
         return {"wards": wards}
