@@ -1,6 +1,7 @@
 # backend/app/api/routes.py
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Depends, Form, Query
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from typing import List, Optional
@@ -15,9 +16,10 @@ from app.models.schemas import (
     TierPriceCalculationResponse,TierPriceCalculationRequest,TierPriceConfigUpdate,TierPriceConfigCreate,TierPriceConfig,
     PriceTier,TripCalculationRequest,
     BookingRequest, BookingResponse,
-    Trip
+    Trip, FixedPriceRoute, FixedPriceRouteCreate, FixedPriceRouteUpdate
 )
 from app.crud.tier_pricing import tier_pricing_crud
+from app.crud.fixed_price_routes import fixed_price_routes_crud
 from app.utils.tier_calculator import TierPriceCalculator
 from app.utils.price_calculator import PriceCalculator
 from app.utils.simple_email_service import simple_email_service
@@ -523,12 +525,18 @@ async def get_active_config(db: Session = Depends(get_db)):
     try:
         # Lấy setting active_pricing_config
         active_config_setting = settings_crud.get_setting(db, "active_pricing_config")
+        
+        # Lấy setting use_fixed_price
+        use_fixed_price_setting = settings_crud.get_setting(db, "use_fixed_price")
+        use_fixed_price = use_fixed_price_setting.value == "true" if use_fixed_price_setting else False
+        
         if not active_config_setting:
             # Mặc định là simple pricing
             return {
                 "type": "simple",
                 "config_name": "default",
-                "config": None
+                "config": None,
+                "use_fixed_price": use_fixed_price
             }
         
         config_value = active_config_setting.value
@@ -549,6 +557,7 @@ async def get_active_config(db: Session = Depends(get_db)):
             return {
                 "type": "tier",
                 "config_name": config_name,
+                "use_fixed_price": use_fixed_price,
                 "config": {
                     "name": tier_config.name,
                     "base_price": tier_config.base_price,
@@ -564,6 +573,7 @@ async def get_active_config(db: Session = Depends(get_db)):
             return {
                 "type": "simple", 
                 "config_name": config_name,
+                "use_fixed_price": use_fixed_price,
                 "config": {
                     "name": simple_config.config_name,
                     "base_price": simple_config.base_price,
@@ -578,8 +588,9 @@ async def get_active_config(db: Session = Depends(get_db)):
 
 @router.post("/set-active-config")
 async def set_active_config(
-    config_type: str,  # "simple" hoặc "tier"
-    config_name: str,
+    config_type: str = Query(..., description="Loại cấu hình: simple hoặc tier"),
+    config_name: str = Query(..., description="Tên cấu hình"),
+    use_fixed_price: bool = Query(False, description="Áp dụng giá cố định"),
     db: Session = Depends(get_db)
 ):
     """Set cấu hình tính giá active"""
@@ -600,10 +611,14 @@ async def set_active_config(
         config_value = f"{config_type}:{config_name}"
         settings_crud.set_setting(db, "active_pricing_config", config_value)
         
+        # Save fixed price setting
+        settings_crud.set_setting(db, "use_fixed_price", "true" if use_fixed_price else "false")
+        
         return {
             "message": f"Đã set active config: {config_type}:{config_name}",
             "type": config_type,
-            "config_name": config_name
+            "config_name": config_name,
+            "use_fixed_price": use_fixed_price
         }
         
     except Exception as e:
@@ -771,30 +786,10 @@ async def calculate_price_enhanced(
     request: TripCalculationRequest,
     db: Session = Depends(get_db)
 ):
-    """Tính giá nâng cao với tính toán khoảng cách và fallback mechanism"""
+    """Tính giá nâng cao với kiểm tra giá cố định và fallback mechanism"""
     try:
         print(f"🚀 Enhanced calculation started for: {request.from_address} -> {request.to_address}")
-        
-        # Lấy active config
-        active_config_response = await get_active_config(db)
-        config_type = active_config_response["type"]
-        config_name = active_config_response["config_name"]
-        config_data = active_config_response["config"]
-        
-        # Fallback nếu không có config
-        if not config_data:
-            config_data = price_config_crud.get_config(db, "default")
-            if not config_data:
-                raise HTTPException(status_code=404, detail="Không tìm thấy cấu hình giá default")
-            config_data = {
-                "base_price": config_data.base_price,
-                "price_per_km": config_data.price_per_km,
-                "min_price": config_data.min_price,
-                "max_price": config_data.max_price
-            }
-            config_type = "simple"
-            config_name = "default"
-        
+
         # QUAN TRỌNG: Tính khoảng cách nếu chưa có
         distance_km = request.distance_km
         duration_minutes = request.duration_minutes
@@ -827,6 +822,96 @@ async def calculate_price_enhanced(
             route_info = distance_result.get("route_info", {})
             
             print(f"✅ Distance calculated: {distance_km} km via {calculation_method}")
+        
+        # Kiểm tra setting có sử dụng giá cố định không
+        use_fixed_price_setting = settings_crud.get_setting(db, "use_fixed_price")
+        use_fixed_price = use_fixed_price_setting and use_fixed_price_setting.value == "true"
+        
+        # Nếu bật tính năng giá cố định, thử tìm giá cố định trước
+        fixed_price_result = None
+        if use_fixed_price:
+            try:
+                route = None
+                
+                # Ưu tiên tìm theo text address (cho hệ thống cũ dùng tọa độ)
+                if hasattr(request, 'from_address') and hasattr(request, 'to_address') and request.from_address and request.to_address:
+                    print(f"🔍 Searching fixed price by text: {request.from_address} -> {request.to_address}")
+                    route = fixed_price_routes_crud.find_matching_route_by_text(
+                        db, request.from_address, request.to_address
+                    )
+                
+                # Nếu không tìm thấy theo text, thử tìm theo ID (cho hệ thống mới)
+                if not route and hasattr(request, 'from_province_id') and hasattr(request, 'to_province_id') and request.from_province_id and request.to_province_id:
+                    print(f"🔍 Searching fixed price by ID: {request.from_province_id} -> {request.to_province_id}")
+                    route = fixed_price_routes_crud.find_matching_route(
+                        db, 
+                        request.from_province_id, 
+                        request.to_province_id,
+                        getattr(request, 'from_district_id', None),
+                        getattr(request, 'to_district_id', None),
+                        getattr(request, 'from_ward_id', None),
+                        getattr(request, 'to_ward_id', None)
+                    )
+                
+                if route:
+                    print(f"✅ Found fixed price route: {route.fixed_price} VND")
+                    fixed_price_result = {
+                        "distance_km": request.distance_km or distance_km,
+                        "duration_minutes": request.duration_minutes or duration_minutes,
+                        "calculated_price": route.fixed_price,
+                        "from_address": request.from_address or route.from_address_text,
+                        "to_address": request.to_address or route.to_address_text,
+                        "config_type": "fixed_price",
+                        "config_name": f"route_{route.id}",
+                        "route_description": route.description,
+                        "calculation_method": "fixed_price"
+                    }
+                    
+                    # Lưu trip với giá cố định
+                    try:
+                        trip_data = {
+                            "from_address": fixed_price_result["from_address"],
+                            "to_address": fixed_price_result["to_address"],
+                            "from_lat": request.from_lat,
+                            "from_lng": request.from_lng,
+                            "to_lat": request.to_lat,
+                            "to_lng": request.to_lng,
+                            "distance_km": fixed_price_result["distance_km"],
+                            "duration_minutes": fixed_price_result["duration_minutes"],
+                            "calculated_price": fixed_price_result["calculated_price"],
+                            "config_used": f"fixed_price:route_{route.id}"
+                        }
+                        trip_crud.create_trip(db, trip_data)
+                    except Exception as trip_error:
+                        print(f"Warning: Could not save fixed price trip: {trip_error}")
+                    
+                    return fixed_price_result
+                    
+            except Exception as fixed_price_error:
+                print(f"Warning: Fixed price lookup failed: {fixed_price_error}")
+        
+        # Nếu không tìm thấy giá cố định, tiếp tục với logic tính giá bình thường
+        print("🔄 No fixed price found, using normal calculation...")
+        
+        # Lấy active config
+        active_config_response = await get_active_config(db)
+        config_type = active_config_response["type"]
+        config_name = active_config_response["config_name"]
+        config_data = active_config_response["config"]
+        
+        # Fallback nếu không có config
+        if not config_data:
+            config_data = price_config_crud.get_config(db, "default")
+            if not config_data:
+                raise HTTPException(status_code=404, detail="Không tìm thấy cấu hình giá default")
+            config_data = {
+                "base_price": config_data.base_price,
+                "price_per_km": config_data.price_per_km,
+                "min_price": config_data.min_price,
+                "max_price": config_data.max_price
+            }
+            config_type = "simple"
+            config_name = "default"
         
         # Validate distance cuối cùng
         if distance_km is None or distance_km <= 0:
@@ -1403,6 +1488,176 @@ async def get_all_settings(db: Session = Depends(get_db)):
         ]
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Lỗi lấy settings: {str(e)}")
+
+# =================== API cấu hình giá cố định theo tuyến ===================
+@router.post("/fixed-price-routes", response_model=FixedPriceRoute)
+async def create_fixed_price_route(
+    route_data: FixedPriceRouteCreate,
+    db: Session = Depends(get_db)
+):
+    """Tạo cấu hình giá cố định mới"""
+    try:
+        return fixed_price_routes_crud.create_route(db, route_data)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Lỗi tạo cấu hình giá cố định: {str(e)}")
+
+@router.get("/fixed-price-routes", response_model=List[FixedPriceRoute])
+async def get_fixed_price_routes(
+    skip: int = 0,
+    limit: int = 100,
+    active_only: bool = True,
+    search: str = "",
+    db: Session = Depends(get_db)
+):
+    """Lấy danh sách cấu hình giá cố định"""
+    try:
+        if search:
+            return fixed_price_routes_crud.search_routes(db, search, skip, limit)
+        return fixed_price_routes_crud.get_routes(db, skip, limit, active_only)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Lỗi lấy danh sách cấu hình: {str(e)}")
+
+@router.get("/fixed-price-routes/{route_id}", response_model=FixedPriceRoute)
+async def get_fixed_price_route(
+    route_id: int,
+    db: Session = Depends(get_db)
+):
+    """Lấy cấu hình giá cố định theo ID"""
+    route = fixed_price_routes_crud.get_route(db, route_id)
+    if not route:
+        raise HTTPException(status_code=404, detail="Không tìm thấy cấu hình giá cố định")
+    return route
+
+@router.put("/fixed-price-routes/{route_id}", response_model=FixedPriceRoute)
+async def update_fixed_price_route(
+    route_id: int,
+    route_update: FixedPriceRouteUpdate,
+    db: Session = Depends(get_db)
+):
+    """Cập nhật cấu hình giá cố định"""
+    updated_route = fixed_price_routes_crud.update_route(db, route_id, route_update)
+    if not updated_route:
+        raise HTTPException(status_code=404, detail="Không tìm thấy cấu hình giá cố định")
+    return updated_route
+
+@router.delete("/fixed-price-routes/{route_id}")
+async def delete_fixed_price_route(
+    route_id: int,
+    db: Session = Depends(get_db)
+):
+    """Xóa cấu hình giá cố định"""
+    success = fixed_price_routes_crud.delete_route(db, route_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Không tìm thấy cấu hình giá cố định")
+    return {"message": "Đã xóa cấu hình giá cố định thành công"}
+
+@router.post("/check-fixed-price")
+async def check_fixed_price(
+    from_province_id: int,
+    to_province_id: int,
+    from_district_id: Optional[int] = None,
+    to_district_id: Optional[int] = None,
+    from_ward_id: Optional[int] = None,
+    to_ward_id: Optional[int] = None,
+    db: Session = Depends(get_db)
+):
+    """Kiểm tra xem có giá cố định cho tuyến đường không"""
+    try:
+        route = fixed_price_routes_crud.find_matching_route(
+            db, from_province_id, to_province_id,
+            from_district_id, to_district_id,
+            from_ward_id, to_ward_id
+        )
+        
+        if route:
+            return {
+                "has_fixed_price": True,
+                "route": {
+                    "id": route.id,
+                    "from_address_text": route.from_address_text,
+                    "to_address_text": route.to_address_text,
+                    "fixed_price": route.fixed_price,
+                    "description": route.description
+                }
+            }
+        else:
+            return {"has_fixed_price": False, "route": None}
+            
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Lỗi kiểm tra giá cố định: {str(e)}")
+
+@router.post("/check-fixed-price-by-text")
+async def check_fixed_price_by_text(
+    from_address: str = Query(..., description="Địa chỉ điểm đi"),
+    to_address: str = Query(..., description="Địa chỉ điểm đến"),
+    db: Session = Depends(get_db)
+):
+    """Kiểm tra xem có giá cố định cho tuyến đường không (theo text địa chỉ)"""
+    try:
+        route = fixed_price_routes_crud.find_matching_route_by_text(
+            db, from_address, to_address
+        )
+        
+        if route:
+            return {
+                "has_fixed_price": True,
+                "route": {
+                    "id": route.id,
+                    "from_address_text": route.from_address_text,
+                    "to_address_text": route.to_address_text,
+                    "fixed_price": route.fixed_price,
+                    "description": route.description
+                }
+            }
+        else:
+            return {"has_fixed_price": False, "route": None}
+            
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Lỗi kiểm tra giá cố định theo text: {str(e)}")
+
+@router.post("/test-fixed-price-matching")
+async def test_fixed_price_matching(
+    from_address: str = Query(..., description="Địa chỉ điểm đi để test"),
+    to_address: str = Query(..., description="Địa chỉ điểm đến để test"),
+    db: Session = Depends(get_db)
+):
+    """Test matching logic cho giá cố định (for debugging)"""
+    try:
+        print(f"\n🧪 TESTING FIXED PRICE MATCHING")
+        print(f"Input FROM: {from_address}")
+        print(f"Input TO: {to_address}")
+        
+        route = fixed_price_routes_crud.find_matching_route_by_text(
+            db, from_address, to_address
+        )
+        
+        if route:
+            return {
+                "match_found": True,
+                "route": {
+                    "id": route.id,
+                    "from_address_text": route.from_address_text,
+                    "to_address_text": route.to_address_text,
+                    "fixed_price": route.fixed_price,
+                    "description": route.description
+                },
+                "test_input": {
+                    "from_address": from_address,
+                    "to_address": to_address
+                }
+            }
+        else:
+            return {
+                "match_found": False,
+                "message": "Không tìm thấy route phù hợp",
+                "test_input": {
+                    "from_address": from_address,
+                    "to_address": to_address
+                }
+            }
+            
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Lỗi test matching: {str(e)}")
 
 # API health check
 @router.get("/health")

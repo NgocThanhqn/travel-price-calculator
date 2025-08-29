@@ -92,6 +92,14 @@ class TripCalculationRequest(BaseModel):
     # Thông tin bổ sung
     duration_minutes: Optional[float] = None
     vehicle_type: Optional[str] = "4_seats"
+    
+    # Thông tin địa chỉ hành chính (cho fixed price)
+    from_province_id: Optional[int] = None
+    from_district_id: Optional[int] = None
+    from_ward_id: Optional[int] = None
+    to_province_id: Optional[int] = None
+    to_district_id: Optional[int] = None
+    to_ward_id: Optional[int] = None
 
 class TripCalculationResponse(BaseModel):
     distance_km: float
@@ -180,6 +188,44 @@ class VehicleTypeInfo(BaseModel):
     description: str
     price_multiplier: float  # Hệ số nhân giá
     max_passengers: int
+
+# Schema cho cấu hình giá cố định theo tuyến
+class FixedPriceRouteBase(BaseModel):
+    from_province_id: int
+    from_district_id: Optional[int] = None
+    from_ward_id: Optional[int] = None
+    from_address_text: str
+    to_province_id: int
+    to_district_id: Optional[int] = None
+    to_ward_id: Optional[int] = None
+    to_address_text: str
+    fixed_price: float
+    description: Optional[str] = None
+    is_active: bool = True
+
+class FixedPriceRouteCreate(FixedPriceRouteBase):
+    pass
+
+class FixedPriceRouteUpdate(BaseModel):
+    from_province_id: Optional[int] = None
+    from_district_id: Optional[int] = None
+    from_ward_id: Optional[int] = None
+    from_address_text: Optional[str] = None
+    to_province_id: Optional[int] = None
+    to_district_id: Optional[int] = None
+    to_ward_id: Optional[int] = None
+    to_address_text: Optional[str] = None
+    fixed_price: Optional[float] = None
+    description: Optional[str] = None
+    is_active: Optional[bool] = None
+
+class FixedPriceRoute(FixedPriceRouteBase):
+    id: int
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+    
+    class Config:
+        from_attributes = True
 
 # Schema cho settings
 class Settings(BaseModel):

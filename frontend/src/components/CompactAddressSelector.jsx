@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useAddress } from '../context/AddressContext';
 
 const CompactAddressSelector = ({ 
   onAddressSelect, 
   disabled = false,
   apiKey = null 
 }) => {
-  const [provinces, setProvinces] = useState([]);
+  // Sử dụng Address Context thay vì state riêng
+  const { provinces, provincesLoading, loadDistricts, loadWards } = useAddress();
+  
   const [districts, setDistricts] = useState([]);
   const [wards, setWards] = useState([]);
   
@@ -26,10 +29,7 @@ const CompactAddressSelector = ({
   
   const API_URL = import.meta.env.VITE_API_URL || '';
 
-  // Load provinces khi component mount
-  useEffect(() => {
-    loadProvinces();
-  }, []);
+  // Không cần useEffect để load provinces nữa vì đã có trong context
 
   // Update filtered options khi search term thay đổi
   useEffect(() => {
@@ -61,23 +61,11 @@ const CompactAddressSelector = ({
     }
   }, [searchTerm, provinces, districts, wards, currentStep]);
 
-  const loadProvinces = async () => {
+  const handleLoadDistricts = async (provinceCode) => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_URL}/api/address/provinces`);
-      setProvinces(response.data.provinces || []);
-    } catch (error) {
-      console.error('❌ Lỗi load provinces:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadDistricts = async (provinceCode) => {
-    try {
-      setLoading(true);
-      const response = await axios.get(`${API_URL}/api/address/districts/${provinceCode}`);
-      setDistricts(response.data.districts || []);
+      const districtsData = await loadDistricts(provinceCode);
+      setDistricts(districtsData);
     } catch (error) {
       console.error('❌ Lỗi load districts:', error);
     } finally {
@@ -85,11 +73,11 @@ const CompactAddressSelector = ({
     }
   };
 
-  const loadWards = async (districtCode) => {
+  const handleLoadWards = async (districtCode) => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_URL}/api/address/wards/${districtCode}`);
-      setWards(response.data.wards || []);
+      const wardsData = await loadWards(districtCode);
+      setWards(wardsData);
     } catch (error) {
       console.error('❌ Lỗi load wards:', error);
     } finally {
@@ -110,7 +98,7 @@ const CompactAddressSelector = ({
     setWards([]);
     
     // Load districts cho tỉnh được chọn
-    loadDistricts(province.code);
+    handleLoadDistricts(province.code);
     
     // Clear search để chuẩn bị cho bước tiếp theo
     setTimeout(() => {
@@ -129,7 +117,7 @@ const CompactAddressSelector = ({
     setWards([]);
     
     // Load wards cho district được chọn
-    loadWards(district.code);
+    handleLoadWards(district.code);
     
     // Clear search để chuẩn bị cho bước tiếp theo
     setTimeout(() => {

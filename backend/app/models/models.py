@@ -72,6 +72,35 @@ class Customer(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
+class FixedPriceRoute(Base):
+    """Bảng cấu hình giá cố định theo tuyến đường"""
+    __tablename__ = "fixed_price_routes"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    
+    # Thông tin điểm đi
+    from_province_id = Column(Integer, nullable=False)  # ID tỉnh điểm đi
+    from_district_id = Column(Integer)  # ID huyện điểm đi (optional)
+    from_ward_id = Column(Integer)  # ID xã điểm đi (optional)
+    from_address_text = Column(String, nullable=False)  # Tên địa chỉ đầy đủ điểm đi
+    
+    # Thông tin điểm đến
+    to_province_id = Column(Integer, nullable=False)  # ID tỉnh điểm đến
+    to_district_id = Column(Integer)  # ID huyện điểm đến (optional)
+    to_ward_id = Column(Integer)  # ID xã điểm đến (optional)
+    to_address_text = Column(String, nullable=False)  # Tên địa chỉ đầy đủ điểm đến
+    
+    # Thông tin giá cố định
+    fixed_price = Column(Float, nullable=False)  # Giá cố định cho tuyến này
+    description = Column(String)  # Mô tả tuyến đường
+    
+    # Trạng thái
+    is_active = Column(Boolean, default=True)
+    
+    # Timestamps
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
 class Booking(Base):
     """Bảng đặt chuyến đi với thông tin khách hàng"""
     __tablename__ = "bookings"

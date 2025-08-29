@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { apiService } from '../services/api';
 import TierPriceManager from '../components/TierPriceManager';
+import FixedPriceManager from '../components/FixedPriceManager';
 
 const AdminPage = () => {
   const [adminAuth, setAdminAuth] = useState(false);
@@ -28,7 +29,8 @@ const AdminPage = () => {
   const [activeConfig, setActiveConfig] = useState({
     type: 'simple',
     config_name: 'default',
-    config: null
+    config: null,
+    use_fixed_price: false
   });
   
   // Xác thực admin
@@ -93,16 +95,16 @@ const AdminPage = () => {
     }
   };
 
-  const handleSetActiveConfig = async (type, configName) => {
+  const handleSetActiveConfig = async (type, configName, useFixedPrice = false) => {
     try {
       setLoading(true);
       setError('');
       setSuccess('');
 
       // FIX: Sử dụng setActiveConfig() với đúng parameters
-      await apiService.setActiveConfig(type, configName);
+      await apiService.setActiveConfig(type, configName, useFixedPrice);
 
-      setSuccess(`✅ Đã chuyển sang cấu hình ${type === 'tier' ? 'theo bậc' : 'đơn giản'}: ${configName}`);
+      setSuccess(`✅ Đã chuyển sang cấu hình ${type === 'tier' ? 'theo bậc' : 'đơn giản'}: ${configName}${useFixedPrice ? ' (có áp dụng giá cố định)' : ''}`);
       loadActiveConfig();
     } catch (err) {
       setError('Lỗi chuyển cấu hình: ' + (err.response?.data?.detail || err.message));
@@ -337,6 +339,16 @@ const AdminPage = () => {
                 🎯 Cấu hình giá theo bậc
               </button>
               <button
+                onClick={() => setActiveTab('fixed')}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'fixed'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                🛣️ Giá cố định theo tuyến
+              </button>
+              <button
                 onClick={() => setActiveTab('settings')}
                 className={`py-4 px-1 border-b-2 font-medium text-sm ${
                   activeTab === 'settings'
@@ -464,6 +476,11 @@ const AdminPage = () => {
             {/* Tier Price Config Tab */}
             {activeTab === 'tier' && (
               <TierPriceManager />
+            )}
+
+            {/* Fixed Price Routes Tab */}
+            {activeTab === 'fixed' && (
+              <FixedPriceManager />
             )}
 
             {/* Settings Tab */}
@@ -600,6 +617,16 @@ const AdminPage = () => {
                           ✅ Đang hoạt động
                         </div>
                       </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Giá cố định:</label>
+                        <div className={`mt-1 px-3 py-2 rounded-md font-medium ${
+                          activeConfig.use_fixed_price 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-gray-100 text-gray-600'
+                        }`}>
+                          {activeConfig.use_fixed_price ? '🛣️ Đang bật' : '❌ Đang tắt'}
+                        </div>
+                      </div>
                     </div>
                   ) : (
                     <div className="text-center py-4">
@@ -679,17 +706,29 @@ const AdminPage = () => {
                               </div>
                             )}
                           </div>
-                          <button
-                            onClick={() => handleSetActiveConfig('simple', 'default')}
-                            disabled={loading || (activeConfig?.type === 'simple' && activeConfig?.config_name === 'default')}
-                            className={`px-4 py-2 rounded font-medium text-sm transition-colors ${
-                              activeConfig?.type === 'simple' && activeConfig?.config_name === 'default'
-                                ? 'bg-blue-600 text-white cursor-default'
-                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                            }`}
-                          >
-                            {activeConfig?.type === 'simple' && activeConfig?.config_name === 'default' ? '✅ Đang dùng' : 'Chọn'}
-                          </button>
+                          <div className="flex items-center space-x-3">
+                            <label className="flex items-center space-x-2 text-sm">
+                              <input
+                                type="checkbox"
+                                checked={activeConfig?.use_fixed_price || false}
+                                onChange={(e) => handleSetActiveConfig('simple', 'default', e.target.checked)}
+                                disabled={loading}
+                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                              />
+                              <span className="text-gray-700">🛣️ Áp dụng giá cố định</span>
+                            </label>
+                            <button
+                              onClick={() => handleSetActiveConfig('simple', 'default', activeConfig?.use_fixed_price || false)}
+                              disabled={loading || (activeConfig?.type === 'simple' && activeConfig?.config_name === 'default')}
+                              className={`px-4 py-2 rounded font-medium text-sm transition-colors ${
+                                activeConfig?.type === 'simple' && activeConfig?.config_name === 'default'
+                                  ? 'bg-blue-600 text-white cursor-default'
+                                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                              }`}
+                            >
+                              {activeConfig?.type === 'simple' && activeConfig?.config_name === 'default' ? '✅ Đang dùng' : 'Chọn'}
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -749,9 +788,19 @@ const AdminPage = () => {
                                 )}
                               </div>
                               
-                              <div className="flex space-x-2">
+                              <div className="flex items-center space-x-3">
+                                <label className="flex items-center space-x-2 text-sm">
+                                  <input
+                                    type="checkbox"
+                                    checked={activeConfig?.use_fixed_price || false}
+                                    onChange={(e) => handleSetActiveConfig('tier', tierConfig.name, e.target.checked)}
+                                    disabled={loading}
+                                    className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                                  />
+                                  <span className="text-gray-700">🛣️ Áp dụng giá cố định</span>
+                                </label>
                                 <button
-                                  onClick={() => handleSetActiveConfig('tier', tierConfig.name)}
+                                  onClick={() => handleSetActiveConfig('tier', tierConfig.name, activeConfig?.use_fixed_price || false)}
                                   disabled={loading || (activeConfig?.type === 'tier' && activeConfig?.config_name === tierConfig.name)}
                                   className={`px-4 py-2 rounded font-medium text-sm transition-colors ${
                                     activeConfig?.type === 'tier' && activeConfig?.config_name === tierConfig.name
@@ -772,6 +821,17 @@ const AdminPage = () => {
                         <p className="text-sm text-gray-400 mt-1">Tạo cấu hình mới ở tab "Cấu hình tier"</p>
                       </div>
                     )}
+                  </div>
+                </div>
+
+                {/* Fixed Price Routes Info */}
+                <div className="mb-8 p-6 bg-blue-50 rounded-lg border border-blue-200">
+                  <h3 className="text-lg font-semibold text-blue-800 mb-4">🛣️ Thông tin về giá cố định theo tuyến</h3>
+                  <div className="text-blue-700 text-sm space-y-2">
+                    <p>• <strong>Giá cố định theo tuyến</strong> cho phép bạn thiết lập giá cụ thể cho các tuyến đường từ tỉnh/huyện/xã A đến B.</p>
+                    <p>• Khi bật tính năng này, hệ thống sẽ kiểm tra giá cố định trước khi áp dụng công thức tính giá theo km.</p>
+                    <p>• Nếu không tìm thấy giá cố định phù hợp, hệ thống sẽ sử dụng cấu hình giá thông thường.</p>
+                    <p>• Để quản lý các tuyến giá cố định, hãy chuyển sang tab <strong>"🛣️ Giá cố định theo tuyến"</strong>.</p>
                   </div>
                 </div>
 
