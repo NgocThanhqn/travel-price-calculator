@@ -696,7 +696,7 @@ const PriceCalculator = () => {
                 </div>
                 <div className="flex justify-between">
                   <span>Thời gian:</span>
-                  <span className="font-medium">{result.data?.duration_text || result.duration_text || 'N/A'}</span>
+                  <span className="font-medium">{result.data?.duration_minutes || result.duration_minutes || 'N/A'} phút</span>
                 </div>
               </div>
               <div className="space-y-1">
@@ -1192,7 +1192,7 @@ const PriceCalculator = () => {
                 </div>
                 <div className="flex justify-between">
                   <span>Thời gian:</span>
-                  <span className="font-medium">{result.data?.duration_text || result.duration_text || 'N/A'}</span>
+                  <span className="font-medium">{result.data?.duration_minutes || result.duration_minutes || 'N/A'} phút</span>
                 </div>
               </div>
               <div className="space-y-1">
