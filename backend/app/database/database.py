@@ -7,7 +7,8 @@ import os
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DATABASE_DIR = os.path.join(BASE_DIR, "database")
-DATABASE_PATH = os.path.join(DATABASE_DIR, "travel_calculator.db")
+#os.path.join(DATABASE_DIR, "travel_calculator.db")
+DATABASE_PATH = "D:/Working/database/travel_calculator.db"
 # Đường dẫn database URL
 DATABASE_URL = f"sqlite:///{os.path.join(DATABASE_DIR, 'travel_calculator.db')}"
 # Tạo thư mục database nếu chưa tồn tại
