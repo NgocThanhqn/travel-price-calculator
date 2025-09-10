@@ -26,9 +26,10 @@ export const AddressProvider = ({ children }) => {
     try {
       setProvincesLoading(true);
       setProvincesError(null);
-      const response = await apiService.getProvinces();
+      // Sử dụng include_coordinates=true để lấy thông tin tọa độ
+      const response = await apiService.getProvinces(true);
       setProvinces(response.data.provinces || []);
-      console.log('✅ Provinces loaded:', response.data.provinces?.length || 0);
+      console.log('✅ Provinces loaded with coordinates:', response.data.provinces?.length || 0);
     } catch (error) {
       console.error('❌ Lỗi load provinces:', error);
       setProvincesError(error.message);
@@ -44,7 +45,8 @@ export const AddressProvider = ({ children }) => {
     }
 
     try {
-      const response = await apiService.getDistricts(provinceCode);
+      // Sử dụng include_coordinates=true để lấy thông tin tọa độ
+      const response = await apiService.getDistricts(provinceCode, true);
       const districts = response.data.districts || [];
       
       // Lưu vào cache
@@ -67,7 +69,8 @@ export const AddressProvider = ({ children }) => {
     }
 
     try {
-      const response = await apiService.getWards(districtCode);
+      // Sử dụng include_coordinates=true để lấy thông tin tọa độ
+      const response = await apiService.getWards(districtCode, true);
       const wards = response.data.wards || [];
       
       // Lưu vào cache
