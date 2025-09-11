@@ -58,6 +58,17 @@ const PriceCalculator = () => {
       ...prev,
       travel_date: tomorrow.toISOString().split('T')[0]
     }));
+
+    // Auto scroll to form when component mounts (from homepage navigation)
+    setTimeout(() => {
+      const formElement = document.querySelector('.form-compact');
+      if (formElement) {
+        formElement.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'start'
+        });
+      }
+    }, 500); // Delay to ensure page is fully loaded
   }, []);
 
   // Khởi tạo Google Maps ngay khi component mount
@@ -373,12 +384,27 @@ const PriceCalculator = () => {
     }, 100);
   };
 
+  useEffect(() => {
+    if (showBookingForm) {
+      setTimeout(() => {
+        const formElement = document.querySelector('.form-compact');
+        if (formElement) {
+          formElement.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'start'
+          });
+        }
+      }, 300); // Small delay to ensure form is rendered
+    }
+  }, [showBookingForm]);
+
   // If showing map selector
   if (showMap) {
     return (
       <div className="max-w-6xl mx-auto p-2 md:p-6">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg md:text-2xl font-bold text-gray-800">
+            Chọn {selectingMode === 'from' ? 'điểm đi' : 'điểm đến'} trên bản đồ
             🗺️ Chọn {selectingMode === 'from' ? 'điểm đi' : 'điểm đến'} trên bản đồ
           </h2>
           <button

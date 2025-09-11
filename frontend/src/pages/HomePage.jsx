@@ -195,7 +195,7 @@ const HomePage = () => {
                     to="/booking"
                     className="bg-purple-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-purple-600 transition-colors duration-300"
                   >
-                    Đặt Đặc Chuyến
+                    Đặt Chuyến Ngay
                   </Link>
                 </div>
               </div>
