@@ -222,7 +222,7 @@ const HomePage = () => {
               <div 
                 className="h-64 md:h-80 bg-cover bg-center transform group-hover:scale-110 transition-transform duration-700"
                 style={{
-                  backgroundImage: `url('https://images.unsplash.com/photo-1528127269322-539801943592?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80')`
+                  backgroundImage: `url('/images/halong-bay.jpg')`
                 }}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent">
@@ -238,13 +238,13 @@ const HomePage = () => {
               <div 
                 className="h-64 md:h-80 bg-cover bg-center transform group-hover:scale-110 transition-transform duration-700"
                 style={{
-                  backgroundImage: `url('https://images.unsplash.com/photo-1555400082-8dd4d78c670b?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80')`
+                  backgroundImage: `url('/images/danang-dragon-bridge.jpg')`
                 }}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent">
                 <div className="absolute bottom-4 left-4 text-white">
                   <h3 className="text-xl md:text-2xl font-bold mb-2">Đà Nẵng</h3>
-                  <p className="text-sm md:text-base text-gray-200">Cầu Vàng & Bà Nà Hills</p>
+                  <p className="text-sm md:text-base text-gray-200">Cầu Rồng phun lửa</p>
                 </div>
               </div>
             </div>
@@ -254,13 +254,13 @@ const HomePage = () => {
               <div 
                 className="h-64 md:h-80 bg-cover bg-center transform group-hover:scale-110 transition-transform duration-700"
                 style={{
-                  backgroundImage: `url('https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80')`
+                  backgroundImage: `url('/images/vungtau-christ-statue.jpg')`
                 }}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent">
                 <div className="absolute bottom-4 left-4 text-white">
                   <h3 className="text-xl md:text-2xl font-bold mb-2">Vũng Tàu</h3>
-                  <p className="text-sm md:text-base text-gray-200">Biển gần Sài Gòn</p>
+                  <p className="text-sm md:text-base text-gray-200">Tượng Chúa Kitô</p>
                 </div>
               </div>
             </div>
@@ -270,7 +270,7 @@ const HomePage = () => {
               <div 
                 className="h-64 md:h-80 bg-cover bg-center transform group-hover:scale-110 transition-transform duration-700"
                 style={{
-                  backgroundImage: `url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80')`
+                  backgroundImage: `url('/images/phuquoc-beach.jpg')`
                 }}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent">
@@ -286,7 +286,7 @@ const HomePage = () => {
               <div 
                 className="h-64 md:h-80 bg-cover bg-center transform group-hover:scale-110 transition-transform duration-700"
                 style={{
-                  backgroundImage: `url('https://images.unsplash.com/photo-1544551763-46a013bb70d5?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80')`
+                  backgroundImage: `url('/images/muine-sand-dunes.jpg')`
                 }}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent">
@@ -302,13 +302,13 @@ const HomePage = () => {
               <div 
                 className="h-64 md:h-80 bg-cover bg-center transform group-hover:scale-110 transition-transform duration-700"
                 style={{
-                  backgroundImage: `url('https://images.unsplash.com/photo-1591522811280-a8759970b03f?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80')`
+                  backgroundImage: `url('/images/cantho-floating-market.jpg')`
                 }}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent">
                 <div className="absolute bottom-4 left-4 text-white">
                   <h3 className="text-xl md:text-2xl font-bold mb-2">Cần Thơ</h3>
-                  <p className="text-sm md:text-base text-gray-200">Chợ nổi miền Tây</p>
+                  <p className="text-sm md:text-base text-gray-200">Chợ nổi Cái Răng</p>
                 </div>
               </div>
             </div>
