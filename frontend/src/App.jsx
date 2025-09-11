@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
-import PriceCalculator from './components/PriceCalculator';
+import HomePage from './pages/HomePage';
+import BookingPage from './pages/BookingPage';
+import PricingPage from './pages/PricingPage';
 import AdminPage from './pages/AdminPage';
 import ContactButtons from './components/ContactButtons';
 import { AddressProvider } from './context/AddressContext';
@@ -19,7 +21,7 @@ const TravelWebsite = () => {
         {/* Header - Tối ưu cho mobile */}
         <header className="bg-gradient-to-r from-blue-600 via-purple-600 to-blue-800 text-white shadow-lg">
           <div className="container mx-auto px-2 md:px-4">
-            {/* Mobile: Chỉ hiển thị hotline và logo compact */}
+            {/* Mobile: Logo, menu button và hotline */}
             <div className="md:hidden py-3">
               <div className="flex items-center justify-between">
                 {/* Logo compact */}
@@ -37,12 +39,62 @@ const TravelWebsite = () => {
                   </div>
                 </div>
                 
-                {/* Hotline */}
-                <div className="flex items-center space-x-2 bg-yellow-400 text-blue-900 px-3 py-1 rounded-full">
-                  <i className="fas fa-phone-alt text-sm"></i>
-                  <span className="font-bold text-sm">0985323531</span>
+                <div className="flex items-center space-x-3">
+                  {/* Menu button */}
+                  <button 
+                    onClick={toggleMobileMenu}
+                    className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
+                  >
+                    <i className={`fas ${showMobileMenu ? 'fa-times' : 'fa-bars'} text-lg`}></i>
+                  </button>
+                  
+                  {/* Hotline */}
+                  <div className="flex items-center space-x-2 bg-yellow-400 text-blue-900 px-3 py-1 rounded-full">
+                    <i className="fas fa-phone-alt text-sm"></i>
+                    <span className="font-bold text-sm">0985323531</span>
+                  </div>
                 </div>
               </div>
+              
+              {/* Mobile Menu */}
+              {showMobileMenu && (
+                <div className="mt-4 pb-4 border-t border-white/20">
+                  <nav className="flex flex-col space-y-3 pt-4">
+                    <Link 
+                      to="/" 
+                      className="flex items-center space-x-3 py-2 px-3 rounded-lg hover:bg-white/10 transition-colors"
+                      onClick={() => setShowMobileMenu(false)}
+                    >
+                      <i className="fas fa-home text-yellow-300"></i>
+                      <span className="font-medium">Trang chủ</span>
+                    </Link>
+                    <Link 
+                      to="/booking" 
+                      className="flex items-center space-x-3 py-2 px-3 rounded-lg hover:bg-white/10 transition-colors"
+                      onClick={() => setShowMobileMenu(false)}
+                    >
+                      <i className="fas fa-calendar-alt text-yellow-300"></i>
+                      <span className="font-medium">Đặt chuyến</span>
+                    </Link>
+                    <Link 
+                      to="/pricing" 
+                      className="flex items-center space-x-3 py-2 px-3 rounded-lg hover:bg-white/10 transition-colors"
+                      onClick={() => setShowMobileMenu(false)}
+                    >
+                      <i className="fas fa-tags text-yellow-300"></i>
+                      <span className="font-medium">Bảng giá</span>
+                    </Link>
+                    <a 
+                      href="#" 
+                      className="flex items-center space-x-3 py-2 px-3 rounded-lg hover:bg-white/10 transition-colors"
+                      onClick={() => setShowMobileMenu(false)}
+                    >
+                      <i className="fas fa-envelope text-yellow-300"></i>
+                      <span className="font-medium">Liên hệ</span>
+                    </a>
+                  </nav>
+                </div>
+              )}
             </div>
 
             {/* Desktop: Full header */}
@@ -92,6 +144,12 @@ const TravelWebsite = () => {
                     <Link to="/" className="hover:text-yellow-300 transition-colors font-medium">
                       Trang chủ
                     </Link>
+                    <Link to="/booking" className="hover:text-yellow-300 transition-colors font-medium">
+                      Đặt chuyến
+                    </Link>
+                    <Link to="/pricing" className="hover:text-yellow-300 transition-colors font-medium">
+                      Bảng giá
+                    </Link>
                     <a href="#" className="hover:text-yellow-300 transition-colors font-medium">
                       Liên hệ
                     </a>
@@ -107,101 +165,9 @@ const TravelWebsite = () => {
 
         {/* Routes */}
         <Routes>
-          {/* Trang chủ */}
-          <Route path="/" element={
-            <>
-              {/* Banner Section - Chỉ hiển thị trên desktop */}
-              <section className="hidden md:block h-96 flex items-center justify-center relative overflow-hidden"
-                style={{
-                  backgroundImage: `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.6)), url('https://images.unsplash.com/photo-1469474968028-56623f02e42e?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80')`,
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center'
-                }}>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="text-center text-white z-10">
-                    <h1 className="text-5xl font-bold mb-6">Khám Phá Việt Nam</h1>
-                    <p className="text-xl mb-4">Trải nghiệm du lịch tuyệt vời với dịch vụ chất lượng</p>
-                    <p className="text-lg mb-8 text-yellow-300 font-semibold">datxeviet.com</p>
-                    <div className="flex justify-center space-x-4">
-                      <button 
-                        onClick={() => {
-                          const formElement = document.querySelector('.form-compact');
-                          if (formElement) {
-                            formElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                          }
-                        }}
-                        className="bg-yellow-400 text-blue-900 px-8 py-3 rounded-lg font-bold hover:bg-yellow-300 transition-colors"
-                      >
-                        Tính Giá Ngay
-                      </button>
-                      <button className="border-2 border-white text-white px-8 py-3 rounded-lg font-bold hover:bg-white hover:text-blue-900 transition-colors">
-                        Liên Hệ
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </section>
-
-              {/* Price Calculator Section */}
-              <section className="py-4 md:py-12 relative">
-                {/* Desktop background - darker overlay */}
-                <div className="hidden md:block absolute inset-0 z-0"
-                  style={{
-                    backgroundImage: `linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.4)), url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80')`,
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                    backgroundAttachment: 'fixed'
-                  }}>
-                </div>
-                
-                {/* Mobile background - subtle gradient */}
-                <div className="md:hidden absolute inset-0 z-0 bg-gradient-to-br from-gray-100 to-gray-200">
-                </div>
-                
-                <div className="container mx-auto px-2 md:px-4 relative z-10">
-                  <PriceCalculator />
-                </div>
-              </section>
-
-              {/* Features Section - Chỉ hiển thị trên desktop */}
-              <section className="hidden md:block py-20 bg-white">
-                <div className="container mx-auto px-4">
-                  <div className="text-center mb-16">
-                    <h2 className="text-4xl font-bold text-gray-800 mb-4">Tại Sao Chọn Du Lịch Huỳnh Vũ?</h2>
-                    <p className="text-xl text-gray-600">Dịch vụ đặt xe uy tín - Tính giá minh bạch</p>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    <div className="text-center p-8 bg-blue-50 rounded-xl">
-                      <div className="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <i className="fas fa-map-marked-alt text-2xl text-white"></i>
-                      </div>
-                      <h3 className="text-xl font-bold text-gray-800 mb-4">Tính Giá Chính Xác</h3>
-                      <p className="text-gray-600">Hệ thống tính giá tự động, minh bạch và chính xác đến từng km</p>
-                    </div>
-                    
-                    <div className="text-center p-8 bg-green-50 rounded-xl">
-                      <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <i className="fas fa-car text-2xl text-white"></i>
-                      </div>
-                      <h3 className="text-xl font-bold text-gray-800 mb-4">Xe Đời Mới</h3>
-                      <p className="text-gray-600">Đội xe đời mới, đầy đủ tiện nghi, đảm bảo an toàn</p>
-                    </div>
-                    
-                    <div className="text-center p-8 bg-yellow-50 rounded-xl">
-                      <div className="w-16 h-16 bg-yellow-500 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <i className="fas fa-headset text-2xl text-white"></i>
-                      </div>
-                      <h3 className="text-xl font-bold text-gray-800 mb-4">Hỗ Trợ 24/7</h3>
-                      <p className="text-gray-600">Đội ngũ hỗ trợ khách hàng 24/7, sẵn sàng giải đáp mọi thắc mắc</p>
-                    </div>
-                  </div>
-                </div>
-              </section>
-            </>
-          } />
-          
-          {/* Admin route */}
+          <Route path="/" element={<HomePage />} />
+          <Route path="/booking" element={<BookingPage />} />
+          <Route path="/pricing" element={<PricingPage />} />
           <Route path="/admin" element={<AdminPage />} />
         </Routes>
 

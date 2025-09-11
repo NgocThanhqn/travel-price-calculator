@@ -6,7 +6,7 @@ const BookingPage = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Breadcrumb */}
-      <div className="bg-white shadow-sm border-b">
+      <div className="bg-white shadow-sm border-b hidden">
         <div className="container mx-auto px-4 py-4">
           <nav className="flex items-center space-x-2 text-sm">
             <Link to="/" className="text-blue-600 hover:text-blue-800 transition-colors">
@@ -20,18 +20,53 @@ const BookingPage = () => {
       </div>
 
       {/* Header Section */}
-      <section className="bg-gradient-to-r from-blue-600 via-purple-600 to-blue-800 text-white py-12 md:py-20">
+      <section className="bg-gradient-to-r from-blue-600 via-purple-600 to-blue-800 text-white py-8 md:py-20 hidden">
         <div className="container mx-auto px-4 text-center">
-          <h1 className="text-3xl md:text-5xl font-bold mb-6">
+          <h1 className="text-2xl md:text-5xl font-bold mb-4 md:mb-6">
             Đặt Chuyến Du Lịch
           </h1>
-          <p className="text-lg md:text-xl text-blue-100 mb-4">
+          <p className="text-base md:text-xl text-blue-100 mb-3 md:mb-4">
             Tính giá và đặt xe du lịch nhanh chóng, tiện lợi
           </p>
-          <p className="text-yellow-300 font-semibold">
+          <p className="text-yellow-300 font-semibold text-sm md:text-base">
             <i className="fas fa-shield-alt mr-2"></i>
             Giá cả minh bạch - Không phát sinh chi phí ẩn
           </p>
+        </div>
+      </section>
+
+      {/* Desktop Banner Section - Khám Phá Việt Nam */}
+      <section className="hidden md:block h-96 flex items-center justify-center relative overflow-hidden">
+        <div 
+          className="absolute inset-0 z-0"
+          style={{
+            backgroundImage: `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.6)), url('https://images.unsplash.com/photo-1528127269322-539801943592?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80')`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center'
+          }}
+        />
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="text-center text-white z-10">
+            <h1 className="text-5xl font-bold mb-6">Khám Phá Việt Nam</h1>
+            <p className="text-xl mb-4">Trải nghiệm du lịch tuyệt vời với dịch vụ chất lượng</p>
+            <p className="text-lg mb-8 text-yellow-300 font-semibold">datxeviet.com</p>
+            <div className="flex justify-center space-x-4">
+              <button 
+                onClick={() => {
+                  const formElement = document.querySelector('.form-compact');
+                  if (formElement) {
+                    formElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }
+                }}
+                className="bg-yellow-400 text-blue-900 px-8 py-3 rounded-lg font-bold hover:bg-yellow-300 transition-colors"
+              >
+                Tính Giá Ngay
+              </button>
+              <button className="border-2 border-white text-white px-8 py-3 rounded-lg font-bold hover:bg-white hover:text-blue-900 transition-colors">
+                Liên Hệ
+              </button>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -40,7 +75,7 @@ const BookingPage = () => {
         {/* Background for desktop */}
         <div className="hidden md:block absolute inset-0 z-0"
           style={{
-            backgroundImage: `linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.2)), url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80')`,
+            backgroundImage: `linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.2)), url('https://images.unsplash.com/photo-1528127269322-539801943592?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80')`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             backgroundAttachment: 'fixed'
@@ -57,8 +92,18 @@ const BookingPage = () => {
       </section>
 
       {/* Quick Info Section */}
-      <section className="py-12 md:py-16 bg-white">
-        <div className="container mx-auto px-4">
+      <section className="py-12 md:py-16 relative overflow-hidden">
+        {/* Background Image */}
+        <div 
+          className="absolute inset-0 z-0"
+          style={{
+            backgroundImage: `linear-gradient(rgba(255,255,255,0.75), rgba(255,255,255,0.85)), url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80')`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundAttachment: 'fixed'
+          }}
+        />
+        <div className="container mx-auto px-4 relative z-10">
           <div className="text-center mb-12">
             <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-4">
               Thông Tin Hữu Ích
