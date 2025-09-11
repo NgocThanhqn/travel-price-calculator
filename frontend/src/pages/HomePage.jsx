@@ -10,7 +10,7 @@ const HomePage = () => {
         <div 
           className="absolute inset-0 z-0"
           style={{
-            backgroundImage: `linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.6)), url('https://images.unsplash.com/photo-1469474968028-56623f02e42e?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80')`,
+            backgroundImage: `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.6)), url('https://images.unsplash.com/photo-1583417267826-aebc4d1542e1?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80')`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             backgroundAttachment: 'fixed'
@@ -53,7 +53,7 @@ const HomePage = () => {
         </div>
         
         {/* Scroll Down Indicator */}
-        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 text-white animate-bounce">
+        <div className="absolute bottom-8 w-full flex justify-center text-white animate-bounce">
           <div className="flex flex-col items-center">
             <span className="text-sm mb-2">Khám phá thêm</span>
             <i className="fas fa-chevron-down text-2xl"></i>
@@ -62,8 +62,18 @@ const HomePage = () => {
       </section>
 
       {/* Services Section */}
-      <section className="py-16 md:py-24 bg-gradient-to-br from-blue-50 to-white">
-        <div className="container mx-auto px-4">
+      <section className="py-16 md:py-24 relative overflow-hidden">
+        {/* Background Image */}
+        <div 
+          className="absolute inset-0 z-0"
+          style={{
+            backgroundImage: `linear-gradient(rgba(255,255,255,0.85), rgba(255,255,255,0.9)), url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80')`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundAttachment: 'fixed'
+          }}
+        />
+        <div className="container mx-auto px-4 relative z-10">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-5xl font-bold text-gray-800 mb-6">
               Dịch Vụ Du Lịch Chuyên Nghiệp
@@ -194,12 +204,134 @@ const HomePage = () => {
         </div>
       </section>
 
+      {/* Vietnam Gallery Section */}
+      <section className="py-16 md:py-24 bg-gradient-to-br from-blue-50 to-purple-50">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-5xl font-bold text-gray-800 mb-6">
+              Vẻ Đẹp Việt Nam
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Khám phá những điểm đến tuyệt đẹp trên khắp đất nước hình chữ S
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+            {/* Hạ Long Bay */}
+            <div className="group relative overflow-hidden rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500">
+              <div 
+                className="h-64 md:h-80 bg-cover bg-center transform group-hover:scale-110 transition-transform duration-700"
+                style={{
+                  backgroundImage: `url('https://images.unsplash.com/photo-1528127269322-539801943592?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80')`
+                }}
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent">
+                <div className="absolute bottom-4 left-4 text-white">
+                  <h3 className="text-xl md:text-2xl font-bold mb-2">Vịnh Hạ Long</h3>
+                  <p className="text-sm md:text-base text-gray-200">Di sản thế giới UNESCO</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Đà Nẵng */}
+            <div className="group relative overflow-hidden rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500">
+              <div 
+                className="h-64 md:h-80 bg-cover bg-center transform group-hover:scale-110 transition-transform duration-700"
+                style={{
+                  backgroundImage: `url('https://images.unsplash.com/photo-1555400082-8dd4d78c670b?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80')`
+                }}
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent">
+                <div className="absolute bottom-4 left-4 text-white">
+                  <h3 className="text-xl md:text-2xl font-bold mb-2">Đà Nẵng</h3>
+                  <p className="text-sm md:text-base text-gray-200">Cầu Vàng & Bà Nà Hills</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Vũng Tàu */}
+            <div className="group relative overflow-hidden rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500">
+              <div 
+                className="h-64 md:h-80 bg-cover bg-center transform group-hover:scale-110 transition-transform duration-700"
+                style={{
+                  backgroundImage: `url('https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80')`
+                }}
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent">
+                <div className="absolute bottom-4 left-4 text-white">
+                  <h3 className="text-xl md:text-2xl font-bold mb-2">Vũng Tàu</h3>
+                  <p className="text-sm md:text-base text-gray-200">Biển gần Sài Gòn</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Phú Quốc */}
+            <div className="group relative overflow-hidden rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500">
+              <div 
+                className="h-64 md:h-80 bg-cover bg-center transform group-hover:scale-110 transition-transform duration-700"
+                style={{
+                  backgroundImage: `url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80')`
+                }}
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent">
+                <div className="absolute bottom-4 left-4 text-white">
+                  <h3 className="text-xl md:text-2xl font-bold mb-2">Phú Quốc</h3>
+                  <p className="text-sm md:text-base text-gray-200">Đảo ngọc thiên đường</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Mũi Né */}
+            <div className="group relative overflow-hidden rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500">
+              <div 
+                className="h-64 md:h-80 bg-cover bg-center transform group-hover:scale-110 transition-transform duration-700"
+                style={{
+                  backgroundImage: `url('https://images.unsplash.com/photo-1544551763-46a013bb70d5?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80')`
+                }}
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent">
+                <div className="absolute bottom-4 left-4 text-white">
+                  <h3 className="text-xl md:text-2xl font-bold mb-2">Mũi Né</h3>
+                  <p className="text-sm md:text-base text-gray-200">Đồi cát & resort biển</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Cần Thơ */}
+            <div className="group relative overflow-hidden rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500">
+              <div 
+                className="h-64 md:h-80 bg-cover bg-center transform group-hover:scale-110 transition-transform duration-700"
+                style={{
+                  backgroundImage: `url('https://images.unsplash.com/photo-1591522811280-a8759970b03f?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80')`
+                }}
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent">
+                <div className="absolute bottom-4 left-4 text-white">
+                  <h3 className="text-xl md:text-2xl font-bold mb-2">Cần Thơ</h3>
+                  <p className="text-sm md:text-base text-gray-200">Chợ nổi miền Tây</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="text-center">
+            <Link 
+              to="/booking"
+              className="inline-flex items-center bg-gradient-to-r from-blue-500 to-purple-600 text-white px-8 py-4 rounded-lg font-bold text-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-lg"
+            >
+              <i className="fas fa-route mr-3"></i>
+              Khám Phá Ngay
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* Experience Section */}
       <section className="py-16 md:py-24 bg-gray-800 text-white relative overflow-hidden">
         <div 
           className="absolute inset-0 opacity-20"
           style={{
-            backgroundImage: `url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80')`,
+            backgroundImage: `url('https://images.unsplash.com/photo-1559592413-7cec4d0d1b04?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80')`,
             backgroundSize: 'cover',
             backgroundPosition: 'center'
           }}
@@ -260,8 +392,18 @@ const HomePage = () => {
       </section>
 
       {/* Why Choose Us Section */}
-      <section className="py-16 md:py-24 bg-white">
-        <div className="container mx-auto px-4">
+      <section className="py-16 md:py-24 relative overflow-hidden">
+        {/* Background Image */}
+        <div 
+          className="absolute inset-0 z-0"
+          style={{
+            backgroundImage: `linear-gradient(rgba(255,255,255,0.88), rgba(255,255,255,0.92)), url('https://images.unsplash.com/photo-1528127269322-539801943592?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80')`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundAttachment: 'fixed'
+          }}
+        />
+        <div className="container mx-auto px-4 relative z-10">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-5xl font-bold text-gray-800 mb-6">
               Tại Sao Chọn Du Lịch Huỳnh Vũ?
