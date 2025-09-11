@@ -23,6 +23,13 @@ const AdminPage = () => {
   const [success, setSuccess] = useState('');
   const [activeTab, setActiveTab] = useState('simple');
 
+  // States for Telegram config
+  const [telegramConfig, setTelegramConfig] = useState({
+    bot_token: '',
+    chat_id: '',
+    is_configured: false
+  });
+
   // States for tier pricing
   const [tierConfigs, setTierConfigs] = useState([]);
   const [trips, setTrips] = useState([]);
@@ -71,6 +78,7 @@ const AdminPage = () => {
       loadTierConfigs();
       loadTrips();
       loadActiveConfig();
+      loadTelegramConfig();
     }
   }, [adminAuth]);
 
@@ -254,6 +262,82 @@ const AdminPage = () => {
     setSuccess('✅ API Key có format hợp lệ. Hãy test trên trang chính để kiểm tra quyền truy cập.');
   };
 
+  // Telegram config functions
+  const loadTelegramConfig = async () => {
+    try {
+      const response = await apiService.getTelegramConfig();
+      setTelegramConfig({
+        bot_token: response.data.bot_token || '',
+        chat_id: response.data.chat_id || '',
+        is_configured: response.data.is_configured || false
+      });
+    } catch (err) {
+      console.warn('Could not load Telegram config:', err.message);
+      setTelegramConfig({
+        bot_token: '',
+        chat_id: '',
+        is_configured: false
+      });
+    }
+  };
+
+  const handleTelegramConfigSubmit = async (e) => {
+    e.preventDefault();
+    if (!telegramConfig.bot_token.trim() || !telegramConfig.chat_id.trim()) {
+      setError('Vui lòng nhập đầy đủ Bot Token và Chat ID');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      await apiService.updateTelegramConfig({
+        bot_token: telegramConfig.bot_token.trim(),
+        chat_id: telegramConfig.chat_id.trim()
+      });
+      
+      setSuccess('✅ Lưu cấu hình Telegram thành công!');
+      loadTelegramConfig(); // Reload to get updated status
+    } catch (err) {
+      setError('Lỗi lưu cấu hình Telegram: ' + (err.response?.data?.detail || err.message));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const testTelegramConnection = async () => {
+    if (!telegramConfig.bot_token.trim() || !telegramConfig.chat_id.trim()) {
+      setError('Vui lòng nhập và lưu cấu hình Telegram trước');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      const response = await apiService.testTelegram();
+      if (response.data.success) {
+        setSuccess('✅ Test Telegram thành công! Tin nhắn đã được gửi.');
+      } else {
+        setError('❌ Test Telegram thất bại: ' + response.data.message);
+      }
+    } catch (err) {
+      setError('❌ Lỗi test Telegram: ' + (err.response?.data?.detail || err.message));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleTelegramInputChange = (field, value) => {
+    setTelegramConfig(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
   // Hiển thị loading khi đang check auth
   if (!authChecked) {
     return (
@@ -357,6 +441,16 @@ const AdminPage = () => {
                 }`}
               >
                 ⚙️ Cài đặt hệ thống
+              </button>
+              <button
+                onClick={() => setActiveTab('telegram')}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'telegram'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                📱 Cấu hình Telegram
               </button>
               <button
                 onClick={() => setActiveTab('active')}
@@ -469,6 +563,122 @@ const AdminPage = () => {
                     Cấu hình này áp dụng công thức tính giá đơn giản cho tất cả các chuyến xe.
                     Để sử dụng cấu hình phức tạp hơn theo khoảng cách, hãy chuyển sang tab "Cấu hình giá theo bậc".
                   </p>
+                </div>
+              </div>
+            )}
+
+            {/* Telegram Config Tab */}
+            {activeTab === 'telegram' && (
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 mb-6">📱 Cấu hình Telegram</h2>
+                
+                {/* Status Display */}
+                <div className={`mb-6 p-4 rounded-lg border ${
+                  telegramConfig.is_configured 
+                    ? 'bg-green-50 border-green-200' 
+                    : 'bg-yellow-50 border-yellow-200'
+                }`}>
+                  <div className="flex items-center">
+                    <div className="text-2xl mr-3">
+                      {telegramConfig.is_configured ? '✅' : '⚠️'}
+                    </div>
+                    <div>
+                      <p className={`font-medium ${
+                        telegramConfig.is_configured ? 'text-green-800' : 'text-yellow-800'
+                      }`}>
+                        {telegramConfig.is_configured 
+                          ? 'Telegram đã được cấu hình' 
+                          : 'Telegram chưa được cấu hình'}
+                      </p>
+                      <p className={`text-sm ${
+                        telegramConfig.is_configured ? 'text-green-600' : 'text-yellow-600'
+                      }`}>
+                        {telegramConfig.is_configured 
+                          ? 'Hệ thống sẽ gửi thông báo booking qua Telegram' 
+                          : 'Cần cấu hình Bot Token và Chat ID để nhận thông báo'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Configuration Form */}
+                <div className="mb-8">
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">🤖 Cấu hình Bot Telegram</h3>
+                  
+                  <form onSubmit={handleTelegramConfigSubmit} className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Bot Token
+                      </label>
+                      <input
+                        type="password"
+                        value={telegramConfig.bot_token}
+                        onChange={(e) => handleTelegramInputChange('bot_token', e.target.value)}
+                        placeholder="Nhập Bot Token từ @BotFather..."
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Tạo bot mới tại @BotFather trên Telegram để lấy token
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Chat ID
+                      </label>
+                      <input
+                        type="text"
+                        value={telegramConfig.chat_id}
+                        onChange={(e) => handleTelegramInputChange('chat_id', e.target.value)}
+                        placeholder="Nhập Chat ID hoặc @username..."
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Chat ID của nhóm/kênh hoặc @username để nhận thông báo
+                      </p>
+                    </div>
+
+                    <div className="flex space-x-3">
+                      <button
+                        type="submit"
+                        disabled={loading}
+                        className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 font-semibold"
+                      >
+                        {loading ? 'Đang lưu...' : '💾 Lưu cấu hình'}
+                      </button>
+                      
+                      <button
+                        type="button"
+                        onClick={testTelegramConnection}
+                        disabled={loading || !telegramConfig.bot_token.trim() || !telegramConfig.chat_id.trim()}
+                        className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 font-semibold"
+                      >
+                        {loading ? 'Đang test...' : '🧪 Test kết nối'}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+
+                {/* Instructions */}
+                <div className="bg-blue-50 p-6 rounded-lg border border-blue-200">
+                  <h3 className="text-lg font-semibold text-blue-800 mb-4">📋 Hướng dẫn cấu hình</h3>
+                  <div className="text-blue-700 text-sm space-y-2">
+                    <p><strong>Bước 1:</strong> Tạo bot Telegram mới:</p>
+                    <ul className="list-disc list-inside ml-4 space-y-1">
+                      <li>Mở Telegram và tìm @BotFather</li>
+                      <li>Gửi lệnh /newbot và làm theo hướng dẫn</li>
+                      <li>Sao chép Bot Token được cung cấp</li>
+                    </ul>
+                    
+                    <p className="mt-3"><strong>Bước 2:</strong> Lấy Chat ID:</p>
+                    <ul className="list-disc list-inside ml-4 space-y-1">
+                      <li>Thêm bot vào nhóm/kênh muốn nhận thông báo</li>
+                      <li>Gửi tin nhắn /start cho bot</li>
+                      <li>Sử dụng @userinfobot để lấy Chat ID</li>
+                    </ul>
+                    
+                    <p className="mt-3"><strong>Bước 3:</strong> Nhập thông tin và test kết nối</p>
+                  </div>
                 </div>
               </div>
             )}

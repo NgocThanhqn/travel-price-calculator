@@ -23,6 +23,7 @@ from app.crud.fixed_price_routes import fixed_price_routes_crud
 from app.utils.tier_calculator import TierPriceCalculator
 from app.utils.price_calculator import PriceCalculator
 from app.utils.simple_email_service import simple_email_service
+from app.utils.telegram_service import telegram_service
 
 router = APIRouter()
 
@@ -226,20 +227,51 @@ async def create_booking(
             "notes": db_booking.notes
         }
         
-        # Gửi email thông báo cho admin (không chờ, không block)
+        # Gửi thông báo cho admin (email + Telegram song song)
         email_sent = False
+        telegram_sent = False
+        
+        # Gửi email thông báo
         try:
             email_sent = simple_email_service.send_new_booking_notification(email_data)
-            print(f"📧 Admin notification: {'✅ sent' if email_sent else '❌ failed'}")
+            print(f"📧 Email notification: {'✅ sent' if email_sent else '❌ failed'}")
         except Exception as e:
-            print(f"📧 Admin notification error: {e}")
+            print(f"📧 Email notification error: {e}")
+        
+        # Gửi Telegram thông báo
+        try:
+            # Lấy config Telegram từ database
+            bot_token_setting = settings_crud.get_setting(db, "telegram_bot_token")
+            chat_id_setting = settings_crud.get_setting(db, "telegram_chat_id")
+            
+            if bot_token_setting and chat_id_setting:
+                bot_token = bot_token_setting.value
+                chat_id = chat_id_setting.value
+                
+                # Cấu hình service
+                telegram_service.set_credentials(bot_token, chat_id)
+                
+                # Gửi thông báo
+                telegram_result = telegram_service.send_new_booking_notification(email_data)
+                telegram_sent = telegram_result.get("success", False)
+                print(f"📱 Telegram notification: {'✅ sent' if telegram_sent else '❌ failed'}")
+            else:
+                print("📱 Telegram notification: ⚠️ chưa cấu hình bot token/chat ID")
+        except Exception as e:
+            print(f"📱 Telegram notification error: {e}")
         
         # Tạo response message
         base_message = "Đặt chuyến thành công!"
+        notifications = []
         if email_sent:
-            notification_msg = " | 📧 Thông báo đã được gửi cho admin"
+            notifications.append("📧 Email sent")
+        if telegram_sent:
+            notifications.append("📱 Telegram sent")
+        
+        if notifications:
+            notification_msg = f" | {' & '.join(notifications)}"
         else:
-            notification_msg = " | ⚠️ Không thể gửi email thông báo (sẽ xử lý thủ công)"
+            notification_msg = " | ⚠️ Không thể gửi thông báo (sẽ xử lý thủ công)"
         
         return {
             "success": True,
@@ -260,6 +292,7 @@ async def create_booking(
                 "booking_status": db_booking.booking_status
             },
             "email_notification": "sent" if email_sent else "failed",
+            "telegram_notification": "sent" if telegram_sent else "failed",
             "price_source": "frontend_calculated" if hasattr(booking, 'calculated_price') and booking.calculated_price else "backend_calculated"
         }
 
@@ -1614,6 +1647,86 @@ async def check_fixed_price_by_text(
             
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Lỗi kiểm tra giá cố định theo text: {str(e)}")
+
+# =================== API quản lý config Telegram ===================
+@router.get("/telegram-config")
+async def get_telegram_config(db: Session = Depends(get_db)):
+    """Lấy cấu hình Telegram hiện tại"""
+    try:
+        bot_token_setting = settings_crud.get_setting(db, "telegram_bot_token")
+        chat_id_setting = settings_crud.get_setting(db, "telegram_chat_id")
+        
+        return {
+            "bot_token": bot_token_setting.value if bot_token_setting else "",
+            "chat_id": chat_id_setting.value if chat_id_setting else "",
+            "is_configured": bool(bot_token_setting and chat_id_setting and 
+                                bot_token_setting.value != "YOUR_BOT_TOKEN_HERE" and 
+                                chat_id_setting.value != "YOUR_CHAT_ID_HERE")
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Lỗi lấy config Telegram: {str(e)}")
+
+@router.post("/telegram-config")
+async def update_telegram_config(
+    bot_token: str = Query(..., description="Bot token từ BotFather"),
+    chat_id: str = Query(..., description="Chat ID để nhận thông báo"),
+    db: Session = Depends(get_db)
+):
+    """Cập nhật cấu hình Telegram"""
+    try:
+        # Lưu bot token
+        settings_crud.set_setting(db, "telegram_bot_token", bot_token)
+        
+        # Lưu chat ID
+        settings_crud.set_setting(db, "telegram_chat_id", chat_id)
+        
+        return {
+            "message": "Cấu hình Telegram đã được cập nhật",
+            "bot_token": bot_token,
+            "chat_id": chat_id
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Lỗi cập nhật config Telegram: {str(e)}")
+
+@router.post("/test-telegram")
+async def test_telegram_connection(db: Session = Depends(get_db)):
+    """Test kết nối Telegram Bot"""
+    try:
+        # Lấy config từ database
+        bot_token_setting = settings_crud.get_setting(db, "telegram_bot_token")
+        chat_id_setting = settings_crud.get_setting(db, "telegram_chat_id")
+        
+        if not bot_token_setting or not chat_id_setting:
+            return {
+                "success": False,
+                "error": "Chưa cấu hình bot token hoặc chat ID"
+            }
+        
+        # Cấu hình service
+        telegram_service.set_credentials(bot_token_setting.value, chat_id_setting.value)
+        
+        # Test connection
+        test_result = telegram_service.test_connection()
+        
+        if test_result["success"]:
+            # Gửi test message
+            test_message = "🤖 Test kết nối Telegram Bot thành công!\n\nBot đã sẵn sàng nhận thông báo booking."
+            message_result = telegram_service.send_message(test_message)
+            
+            return {
+                "success": True,
+                "bot_info": test_result.get("bot_info"),
+                "test_message_sent": message_result.get("success", False),
+                "message": "Kết nối Telegram thành công!"
+            }
+        else:
+            return test_result
+            
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Lỗi test Telegram: {str(e)}"
+        }
 
 @router.post("/test-fixed-price-matching")
 async def test_fixed_price_matching(

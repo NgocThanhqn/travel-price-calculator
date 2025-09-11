@@ -339,6 +339,16 @@ export const apiService = {
   getFullAddress: (params) => api.get('/api/address/full-address', { params }),
   getAddressStats: () => api.get('/api/address/stats'),
 
+  // Telegram configuration
+  getTelegramConfig: () => api.get('/api/telegram-config'),
+  updateTelegramConfig: (data) => api.post('/api/telegram-config', null, {
+    params: {
+      bot_token: data.bot_token,
+      chat_id: data.chat_id
+    }
+  }),
+  testTelegram: () => api.post('/api/test-telegram'),
+
   // Generic methods for backward compatibility
   get: (url, config) => api.get(url, config),
   post: (url, data, config) => api.post(url, data, config),
