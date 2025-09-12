@@ -323,18 +323,9 @@ export const apiService = {
     }),
 
   // Address management
-  getProvinces: (includeCoordinates = false) => 
-    api.get('/api/address/provinces', { 
-      params: includeCoordinates ? { include_coordinates: true } : {} 
-    }),
-  getDistricts: (provinceCode, includeCoordinates = false) => 
-    api.get(`/api/address/districts/${provinceCode}`, { 
-      params: includeCoordinates ? { include_coordinates: true } : {} 
-    }),
-  getWards: (districtCode, includeCoordinates = false) => 
-    api.get(`/api/address/wards/${districtCode}`, { 
-      params: includeCoordinates ? { include_coordinates: true } : {} 
-    }),
+  getProvinces: () => api.get('/api/address/provinces'),
+  getDistricts: (provinceCode) => api.get(`/api/address/districts/${provinceCode}`),
+  getWards: (districtCode) => api.get(`/api/address/wards/${districtCode}`),
   searchAddress: (params) => api.get('/api/address/search', { params }),
   getFullAddress: (params) => api.get('/api/address/full-address', { params }),
   getAddressStats: () => api.get('/api/address/stats'),

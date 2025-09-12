@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { coordinateService } from '../services/coordinateService';
 import axios from 'axios';
 import { useAddress } from '../context/AddressContext';
 
@@ -151,116 +150,41 @@ const CompactAddressSelector = ({
   const buildFullAddress = async () => {
     if (!selectedProvince) return;
 
-    try {
-      setGeocoding(true);
-
-      // Xây dựng địa chỉ đầy đủ
-      let addressParts = [];
-      
-      if (specificAddress.trim()) {
-        addressParts.push(specificAddress.trim());
-      }
-      
-      if (selectedWard) {
-        addressParts.push(selectedWard.full_name || selectedWard.name);
-      }
-      if (selectedDistrict) {
-        addressParts.push(selectedDistrict.full_name || selectedDistrict.name);
-      }
-      if (selectedProvince) {
-        addressParts.push(selectedProvince.full_name || selectedProvince.name);
-      }
-      
-      const fullAddress = addressParts.join(', ');
-
-      // Xác định cấp cao nhất và item tương ứng
-      let targetLevel, targetItem;
-      if (selectedWard) {
-        targetLevel = 'ward';
-        targetItem = selectedWard;
-      } else if (selectedDistrict) {
-        targetLevel = 'district';
-        targetItem = selectedDistrict;
-      } else {
-        targetLevel = 'province';
-        targetItem = selectedProvince;
-      }
-
-      console.log(`🎯 Xử lý địa chỉ cấp ${targetLevel}:`, targetItem);
-
-      // Sử dụng coordinateService để xử lý thông minh
-      const result = await coordinateService.processAddressSelection({
-        level: targetLevel,
-        item: targetItem,
-        fullAddress: fullAddress
-      });
-
-      setGeocoding(false);
-
-      if (result.success) {
-        console.log(`✅ Tọa độ từ ${result.source}:`, result.coordinates);
-        
-        if (onAddressSelect) {
-          onAddressSelect({
-            ...result.coordinates,
-            source: result.source,
-            cached: result.source.includes('cache') || result.source.includes('database')
-          });
-        }
-      } else {
-        // Fallback về geocoding trực tiếp
-        console.warn('⚠️ Coordinate service thất bại, fallback:', result.error);
-        await fallbackToDirectGeocoding(fullAddress);
-      }
-
-    } catch (error) {
-      console.error('❌ Lỗi trong buildFullAddress:', error);
-      setGeocoding(false);
-      await fallbackToDirectGeocoding();
+    let addressParts = [];
+    
+    // Thêm địa chỉ cụ thể nếu có
+    if (specificAddress.trim()) {
+      addressParts.push(specificAddress.trim());
     }
-  };
+    
+    // Thêm các cấp địa chỉ
+    if (selectedWard) {
+      addressParts.push(selectedWard.full_name || selectedWard.name);
+    }
+    if (selectedDistrict) {
+      addressParts.push(selectedDistrict.full_name || selectedDistrict.name);
+    }
+    if (selectedProvince) {
+      addressParts.push(selectedProvince.full_name || selectedProvince.name);
+    }
+    
+    const fullAddress = addressParts.join(', ');
 
-  const fallbackToDirectGeocoding = async (fullAddress = null) => {
-    try {
-      if (!fullAddress) {
-        let addressParts = [];
-        
-        if (specificAddress.trim()) {
-          addressParts.push(specificAddress.trim());
-        }
-        
-        if (selectedWard) {
-          addressParts.push(selectedWard.full_name || selectedWard.name);
-        }
-        if (selectedDistrict) {
-          addressParts.push(selectedDistrict.full_name || selectedDistrict.name);
-        }
-        if (selectedProvince) {
-          addressParts.push(selectedProvince.full_name || selectedProvince.name);
-        }
-        
-        fullAddress = addressParts.join(', ');
+    // Nếu có địa chỉ đầy đủ và API key, thực hiện geocoding
+    if (fullAddress && apiKey && window.google) {
+      geocodeAddress(fullAddress);
+    } else if (fullAddress) {
+      // Không có API key hoặc Google Maps chưa load
+      if (onAddressSelect) {
+        onAddressSelect({
+          lat: null,
+          lng: null,
+          address: fullAddress,
+          formatted_address: fullAddress,
+          place_id: null,
+          geocoding_failed: !apiKey || !window.google
+        });
       }
-
-      if (fullAddress && apiKey && window.google) {
-        await geocodeAddress(fullAddress);
-      } else if (fullAddress) {
-        // Không có API key hoặc Google Maps chưa load
-        if (onAddressSelect) {
-          onAddressSelect({
-            lat: null,
-            lng: null,
-            address: fullAddress,
-            formatted_address: fullAddress,
-            place_id: null,
-            geocoding_failed: !apiKey || !window.google,
-            source: 'no_geocoding'
-          });
-        }
-      }
-    } catch (error) {
-      console.error('❌ Fallback geocoding failed:', error);
-      setGeocoding(false);
     }
   };
 
