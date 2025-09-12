@@ -129,13 +129,7 @@ class TelegramService:
             # Format ngày giờ
             travel_datetime = f"{booking_data['travel_date']} {booking_data['travel_time']}"
             
-            # Vehicle type mapping
-            vehicle_names = {
-                "4_seats": "Xe 4 chỗ",
-                "7_seats": "Xe 7 chỗ", 
-                "16_seats": "Xe 16 chỗ"
-            }
-            vehicle_name = vehicle_names.get(booking_data.get('vehicle_type'), booking_data.get('vehicle_type', 'N/A'))
+            vehicle_name = booking_data['vehicle_type_name']; #vehicle_names.get(booking_data.get('vehicle_type'), booking_data.get('vehicle_type', 'N/A'))
             
             message = f"""🚗 <b>BOOKING MỚI #{booking_data['booking_id']}</b>
 

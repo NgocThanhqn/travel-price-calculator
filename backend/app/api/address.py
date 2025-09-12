@@ -41,22 +41,23 @@ async def get_provinces(
     try:
         if include_coordinates:
             # Enhanced query với coordinate info
-            query = text("SELECT code, name, full_name, latitude, longitude FROM provinces ORDER BY name")
+            query = text("SELECT id, code, name, full_name, latitude, longitude FROM provinces ORDER BY name")
             result = db.execute(query).fetchall()
             
             provinces = []
             for row in result:
                 province_data = {
-                    "code": row[0],
-                    "name": row[1], 
-                    "full_name": row[2] or row[1],
-                    "has_coordinates": row[3] is not None and row[4] is not None
+                    "id": row[0],
+                    "code": row[1],
+                    "name": row[2], 
+                    "full_name": row[3] or row[2],
+                    "has_coordinates": row[4] is not None and row[5] is not None
                 }
                 
                 # Chỉ include coordinates nếu có
-                if row[3] is not None and row[4] is not None:
-                    province_data["latitude"] = float(row[3])
-                    province_data["longitude"] = float(row[4])
+                if row[4] is not None and row[5] is not None:
+                    province_data["latitude"] = float(row[4])
+                    province_data["longitude"] = float(row[5])
                 
                 provinces.append(province_data)
             
@@ -71,15 +72,16 @@ async def get_provinces(
             }
         else:
             # Original query without coordinates
-            query = text("SELECT code, name, full_name FROM provinces ORDER BY name")
+            query = text("SELECT id, code, name, full_name FROM provinces ORDER BY name")
             result = db.execute(query).fetchall()
             
             provinces = []
             for row in result:
                 provinces.append({
-                    "code": row[0],
-                    "name": row[1], 
-                    "full_name": row[2] or row[1]
+                    "id": row[0],
+                    "code": row[1],
+                    "name": row[2], 
+                    "full_name": row[3] or row[2]
                 })
             
             return {"provinces": provinces}
@@ -98,7 +100,7 @@ async def get_districts(
         if include_coordinates:
             # Enhanced query với coordinate info
             query = text("""
-                SELECT code, name, full_name, latitude, longitude
+                SELECT id, code, name, full_name, latitude, longitude
                 FROM districts 
                 WHERE province_code = :province_code 
                 ORDER BY name
@@ -108,16 +110,17 @@ async def get_districts(
             districts = []
             for row in result:
                 district_data = {
-                    "code": row[0],
-                    "name": row[1],
-                    "full_name": row[2] or row[1],
-                    "has_coordinates": row[3] is not None and row[4] is not None
+                    "id": row[0],
+                    "code": row[1],
+                    "name": row[2],
+                    "full_name": row[3] or row[2],
+                    "has_coordinates": row[4] is not None and row[5] is not None
                 }
                 
                 # Chỉ include coordinates nếu có
-                if row[3] is not None and row[4] is not None:
-                    district_data["latitude"] = float(row[3])
-                    district_data["longitude"] = float(row[4])
+                if row[4] is not None and row[5] is not None:
+                    district_data["latitude"] = float(row[4])
+                    district_data["longitude"] = float(row[5])
                 
                 districts.append(district_data)
             
@@ -133,7 +136,7 @@ async def get_districts(
         else:
             # Original query without coordinates
             query = text("""
-                SELECT code, name, full_name 
+                SELECT id, code, name, full_name 
                 FROM districts 
                 WHERE province_code = :province_code 
                 ORDER BY name
@@ -143,9 +146,10 @@ async def get_districts(
             districts = []
             for row in result:
                 districts.append({
-                    "code": row[0],
-                    "name": row[1],
-                    "full_name": row[2] or row[1]
+                    "id": row[0],
+                    "code": row[1],
+                    "name": row[2],
+                    "full_name": row[3] or row[2]
                 })
             
             return {"districts": districts}
@@ -164,7 +168,7 @@ async def get_wards(
         if include_coordinates:
             # Enhanced query với coordinate info
             query = text("""
-                SELECT code, name, full_name, division_type, latitude, longitude
+                SELECT id, code, name, full_name, division_type, latitude, longitude
                 FROM wards 
                 WHERE district_code = :district_code 
                 ORDER BY name
@@ -174,17 +178,18 @@ async def get_wards(
             wards = []
             for row in result:
                 ward_data = {
-                    "code": row[0],
-                    "name": row[1],
-                    "full_name": row[2] or row[1],
-                    "division_type": row[3],
-                    "has_coordinates": row[4] is not None and row[5] is not None
+                    "id": row[0],
+                    "code": row[1],
+                    "name": row[2],
+                    "full_name": row[3] or row[2],
+                    "division_type": row[4],
+                    "has_coordinates": row[5] is not None and row[6] is not None
                 }
                 
                 # Chỉ include coordinates nếu có
-                if row[4] is not None and row[5] is not None:
-                    ward_data["latitude"] = float(row[4])
-                    ward_data["longitude"] = float(row[5])
+                if row[5] is not None and row[6] is not None:
+                    ward_data["latitude"] = float(row[5])
+                    ward_data["longitude"] = float(row[6])
                 
                 wards.append(ward_data)
             
@@ -200,7 +205,7 @@ async def get_wards(
         else:
             # Original query without coordinates
             query = text("""
-                SELECT code, name, full_name, division_type
+                SELECT id, code, name, full_name, division_type
                 FROM wards 
                 WHERE district_code = :district_code 
                 ORDER BY name
@@ -210,10 +215,11 @@ async def get_wards(
             wards = []
             for row in result:
                 wards.append({
-                    "code": row[0],
-                    "name": row[1],
-                    "full_name": row[2] or row[1],
-                    "division_type": row[3]
+                    "id": row[0],
+                    "code": row[1],
+                    "name": row[2],
+                    "full_name": row[3] or row[2],
+                    "division_type": row[4]
                 })
             
             return {"wards": wards}
