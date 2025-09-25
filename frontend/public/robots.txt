@@ -1,0 +1,19 @@
+User-agent: *
+Allow: /
+
+# Disallow admin pages
+Disallow: /admin/
+Disallow: /api/
+
+# Allow important pages
+Allow: /
+Allow: /booking
+Allow: /pricing
+Allow: /services/
+Allow: /destinations/
+
+# Sitemap location
+Sitemap: https://datxeviet.com/sitemap.xml
+
+# Crawl delay (optional)
+Crawl-delay: 1

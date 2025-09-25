@@ -1,10 +1,34 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import PriceCalculator from '../components/PriceCalculator';
+import SEOHead from '../components/SEOHead';
 
 const BookingPage = () => {
+  const bookingStructuredData = {
+    "@context": "https://schema.org",
+    "@type": "Service",
+    "name": "Đặt Xe Du Lịch Online",
+    "provider": {
+      "@type": "Organization",
+      "name": "Du Lịch Huỳnh Vũ"
+    },
+    "description": "Dịch vụ đặt xe du lịch online với tính giá tự động, minh bạch. Hỗ trợ xe 4 chỗ, xe 7 chỗ và tour đặc chuyến.",
+    "offers": {
+      "@type": "Offer",
+      "availability": "https://schema.org/InStock",
+      "priceValidUntil": "2025-12-31"
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
+      <SEOHead 
+        title="Đặt Xe Du Lịch Online - Tính Giá Minh Bạch | Du Lịch Huỳnh Vũ"
+        description="✅ Đặt xe du lịch online nhanh chóng tại datxeviet.com. Tính giá tự động, minh bạch. Xe 4 chỗ, 7 chỗ, tour đặc chuyến. Hotline: 0985323531"
+        keywords="đặt xe du lịch online, tính giá xe du lịch, booking xe du lịch, đặt xe 4 chỗ, đặt xe 7 chỗ, tour đặc chuyến"
+        canonical="https://datxeviet.com/booking"
+        structuredData={bookingStructuredData}
+      />
       {/* Breadcrumb */}
       <div className="bg-white shadow-sm border-b hidden">
         <div className="container mx-auto px-4 py-4">

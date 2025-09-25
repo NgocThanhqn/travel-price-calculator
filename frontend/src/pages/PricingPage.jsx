@@ -1,7 +1,30 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import SEOHead from '../components/SEOHead';
 
 const PricingPage = () => {
+  const pricingStructuredData = {
+    "@context": "https://schema.org",
+    "@type": "PriceSpecification",
+    "name": "Bảng Giá Thuê Xe Du Lịch",
+    "description": "Bảng giá thuê xe du lịch chi tiết cho các tuyến phổ biến từ TP.HCM",
+    "priceCurrency": "VND",
+    "offers": [
+      {
+        "@type": "Offer",
+        "name": "Xe 4 chỗ TP.HCM - Vũng Tàu",
+        "price": "700000",
+        "priceCurrency": "VND"
+      },
+      {
+        "@type": "Offer", 
+        "name": "Xe 7 chỗ TP.HCM - Vũng Tàu",
+        "price": "800000",
+        "priceCurrency": "VND"
+      }
+    ]
+  };
+
   const pricingData = [
     {
       title: "HỒ CHÍ MINH ⇆ XUYÊN MỘC, HỒ TRÀM",
@@ -105,6 +128,13 @@ const PricingPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <SEOHead 
+        title="Bảng Giá Thuê Xe Du Lịch 2025 - Minh Bạch, Cạnh Tranh | Du Lịch Huỳnh Vũ"
+        description="💰 Bảng giá thuê xe du lịch 2025 cập nhật mới nhất. Xe 4 chỗ từ 700k, xe 7 chỗ từ 800k. Giá cố định, không phát sinh. Xem giá ngay!"
+        keywords="bảng giá thuê xe du lịch, giá xe 4 chỗ, giá xe 7 chỗ, thuê xe vũng tàu, thuê xe hồ tràm, giá thuê xe 2025"
+        canonical="https://datxeviet.com/pricing"
+        structuredData={pricingStructuredData}
+      />
       {/* Breadcrumb */}
       <div className="bg-white shadow-sm border-b">
         <div className="container mx-auto px-4 py-4">
