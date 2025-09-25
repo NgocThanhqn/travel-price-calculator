@@ -1,9 +1,42 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import SEOHead from '../components/SEOHead';
 
 const HomePage = () => {
+  const homeStructuredData = {
+    "@context": "https://schema.org",
+    "@type": "LocalBusiness",
+    "name": "Du Lịch Huỳnh Vũ",
+    "image": "https://datxeviet.com/images/logo.png",
+    "telephone": "+84985323531",
+    "address": {
+      "@type": "PostalAddress",
+      "addressCountry": "VN"
+    },
+    "geo": {
+      "@type": "GeoCoordinates",
+      "latitude": 10.8231,
+      "longitude": 106.6297
+    },
+    "url": "https://datxeviet.com",
+    "priceRange": "$$",
+    "openingHours": "Mo-Su 00:00-23:59",
+    "aggregateRating": {
+      "@type": "AggregateRating",
+      "ratingValue": "5",
+      "reviewCount": "1000"
+    }
+  };
+
   return (
     <>
+      <SEOHead 
+        title="Du Lịch Huỳnh Vũ - Đặt Xe Du Lịch Uy Tín #1 Việt Nam | datxeviet.com"
+        description="🚗 Dịch vụ đặt xe du lịch uy tín #1 Việt Nam. Tính giá minh bạch, xe đời mới, tài xế kinh nghiệm 10+ năm. ☎️ Hotline: 0985323531. Đặt xe ngay!"
+        keywords="đặt xe du lịch, thuê xe du lịch việt nam, xe 4 chỗ, xe 7 chỗ, tour du lịch, datxeviet, tính giá xe du lịch, thuê xe giá rẻ"
+        canonical="https://datxeviet.com"
+        structuredData={homeStructuredData}
+      />
       {/* Hero Section */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
         {/* Background Image */}
